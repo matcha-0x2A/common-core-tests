@@ -198,6 +198,72 @@ void test_consecutive_newlines(void)
 	unlink(file);
 }
 
+void test_stdin(void)
+{
+	printf("\n%s--- Test STDIN (fd = 0, from main.c) ---%s\n", CYAN, RESET);
+	int pfd[2];
+	if (pipe(pfd) < 0)
+		return;
+	const char *msg = "stdin line 1\nstdin line 2 without nl";
+	if (write(pfd[1], msg, strlen(msg)) < 0)
+	{
+		close(pfd[0]);
+		close(pfd[1]);
+		return;
+	}
+	close(pfd[1]);
+
+	int saved_stdin = dup(STDIN_FILENO);
+	dup2(pfd[0], STDIN_FILENO);
+	close(pfd[0]);
+
+	char *l1 = get_next_line(STDIN_FILENO);
+	check_str(l1, "stdin line 1\n", "Read line 1 from STDIN (fd = 0)");
+	if (l1)
+		free(l1);
+
+	char *l2 = get_next_line(STDIN_FILENO);
+	check_str(l2, "stdin line 2 without nl", "Read line 2 from STDIN (EOF without nl)");
+	if (l2)
+		free(l2);
+
+	char *l3 = get_next_line(STDIN_FILENO);
+	check_ptr(l3, NULL, "Line 3 on STDIN is NULL (EOF)");
+	if (l3)
+		free(l3);
+
+	dup2(saved_stdin, STDIN_FILENO);
+	close(saved_stdin);
+}
+
+void test_main_loop_simulation(void)
+{
+	printf("\n%s--- Test Main Loop Simulation (while loop from main.c) ---%s\n", CYAN, RESET);
+	const char *file = "/tmp/gnl_test_main_loop.txt";
+	create_temp_file(file, "Alpha\nBeta\nGamma\nDelta");
+
+	int fd = open(file, O_RDONLY);
+	if (fd >= 0)
+	{
+		const char *expected[] = {"Alpha\n", "Beta\n", "Gamma\n", "Delta"};
+		int count = 0;
+		char *line = get_next_line(fd);
+		while (line)
+		{
+			if (count < 4)
+				check_str(line, expected[count], "Main loop read matching line");
+			else
+				check(0, "Unexpected extra line in main loop");
+			free(line);
+			count++;
+			line = get_next_line(fd);
+		}
+		check(count == 4, "Total lines read by main loop is 4");
+		close(fd);
+	}
+	unlink(file);
+}
+
 int main(void)
 {
 	printf("%s=== GetNextLine Test Suite (BUFFER_SIZE=%d) ===%s\n", BLUE, BUFFER_SIZE, RESET);
@@ -208,6 +274,8 @@ int main(void)
 	test_single_line_no_nl();
 	test_multiple_lines();
 	test_consecutive_newlines();
+	test_stdin();
+	test_main_loop_simulation();
 
 	printf("\n%s========================================%s\n", BLUE, RESET);
 	printf("Tests run: %d | Passed: %s%d%s | Failed: %s%d%s\n",

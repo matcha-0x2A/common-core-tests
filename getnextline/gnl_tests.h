@@ -31,5 +31,7 @@ void test_single_line_with_nl(void);
 void test_single_line_no_nl(void);
 void test_multiple_lines(void);
 void test_consecutive_newlines(void);
+void test_stdin(void);
+void test_main_loop_simulation(void);
 
 #endif

@@ -8,6 +8,11 @@ SRCS = $(GNL_DIR)/get_next_line.c \
        $(GNL_DIR)/get_next_line_utils.c \
        gnl_tests.c
 
+MAIN_NAME = gnl_main
+MAIN_SRCS = $(GNL_DIR)/get_next_line.c \
+            $(GNL_DIR)/get_next_line_utils.c \
+            main.c
+
 all: $(NAME)
 	@if [ -f "$(GNL_DIR)/.wip" ]; then \
 		echo "⚠️  [WIP] $(GNL_DIR) en cours de développement - tests informatifs"; \
@@ -19,6 +24,11 @@ all: $(NAME)
 $(NAME): $(SRCS)
 	@$(CC) $(CFLAGS) $(SRCS) -I$(GNL_DIR) -I. -o $(NAME)
 
+main: $(MAIN_NAME)
+
+$(MAIN_NAME): $(MAIN_SRCS)
+	@$(CC) $(CFLAGS) $(MAIN_SRCS) -I$(GNL_DIR) -I. -o $(MAIN_NAME)
+
 valgrind: $(NAME)
 	@if [ -f "$(GNL_DIR)/.wip" ]; then \
 		echo "⚠️  [WIP] $(GNL_DIR) en cours de développement - valgrind informatif"; \
@@ -28,10 +38,10 @@ valgrind: $(NAME)
 	fi
 
 clean:
-	@rm -f $(NAME)
+	@rm -f $(NAME) $(MAIN_NAME)
 
 fclean: clean
 
 re: fclean all
 
-.PHONY: all valgrind clean fclean re
+.PHONY: all valgrind clean fclean re main

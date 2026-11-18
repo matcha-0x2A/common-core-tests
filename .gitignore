@@ -1,0 +1,24 @@
+# Binaires et objets compilés
+run_tests
+*.o
+*.a
+*.so
+*.out
+*.dSYM/
+
+# Coredumps et logs Valgrind
+vgcore.*
+core
+core.*
+*.log
+
+# Fichiers temporaires et éditeurs
+*~
+*.swp
+*.swo
+.DS_Store
+.vscode/
+.idea/
+
+# Marqueur temporaire de développement
+.wip

@@ -1,6 +1,20 @@
 # Root Tests Makefile - Dispatches to project test suites
 
-all: libft
+all: help
+
+help:
+	@echo "42 Common Core Test Suites"
+	@echo ""
+	@echo "Usage via scripts (recommandé) :"
+	@echo "  ./test_libft.sh [/chemin/vers/libft] [--valgrind]"
+	@echo "  ./test_getnextline.sh [/chemin/vers/gnl] [--valgrind] [-b BUFFER_SIZE]"
+	@echo "  ./test_libftprintf.sh [/chemin/vers/printf] [--valgrind]"
+	@echo ""
+	@echo "Usage direct via make :"
+	@echo "  make libft        LIBFT_DIR=/chemin/vers/libft"
+	@echo "  make getnextline  GNL_DIR=/chemin/vers/gnl [BUFFER_SIZE=42]"
+	@echo "  make libftprintf  PRINTF_DIR=/chemin/vers/printf"
+	@echo "  make clean / make fclean"
 
 libft:
 	@$(MAKE) -C libft
@@ -23,4 +37,4 @@ fclean:
 
 re: fclean all
 
-.PHONY: all libft getnextline libftprintf clean fclean re
+.PHONY: all help libft getnextline libftprintf clean fclean re

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 
 # Usage:
-#   ~/wip/x2a/tests/test_libft.sh               # tests current directory ($PWD)
-#   ~/wip/x2a/tests/test_libft.sh /path/to/peer # tests specified directory
-#   ~/wip/x2a/tests/test_libft.sh --valgrind     # tests with valgrind
+#   ./test_libft.sh               # tests current directory ($PWD)
+#   ./test_libft.sh /path/to/peer # tests specified directory
+#   ./test_libft.sh --valgrind    # tests with valgrind
 
-TARGET="${PWD}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET=""
 VALGRIND_FLAG=""
 
 for arg in "$@"; do
@@ -16,7 +17,27 @@ for arg in "$@"; do
     fi
 done
 
-TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/libft" && pwd)"
+if [ -z "$TARGET" ]; then
+    if [ "$PWD" != "$SCRIPT_DIR" ] && [ -f "${PWD}/Makefile" ]; then
+        TARGET="${PWD}"
+    elif [ -d "${SCRIPT_DIR}/../libft" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../libft" && pwd)"
+    fi
+fi
+
+if [ -z "$TARGET" ] || [ ! -d "$TARGET" ]; then
+    echo "❌ Erreur: Répertoire cible introuvable."
+    echo "Usage: $0 [/chemin/vers/libft] [--valgrind]"
+    exit 1
+fi
+
+if [ ! -f "$TARGET/Makefile" ]; then
+    echo "❌ Erreur: Aucun Makefile trouvé dans '$TARGET'."
+    echo "   Libft requiert un Makefile conforme aux consignes 42."
+    exit 1
+fi
+
+TESTS_DIR="${SCRIPT_DIR}/libft"
 
 echo "=== Running Libft Tests against: $TARGET ==="
 make -C "$TESTS_DIR" LIBFT_DIR="$TARGET" $VALGRIND_FLAG
