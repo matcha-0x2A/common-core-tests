@@ -6,7 +6,8 @@
 #   ./test_getnextline.sh --valgrind    # tests with valgrind
 #   ./test_getnextline.sh -b 1          # tests with specific BUFFER_SIZE
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 TARGET=""

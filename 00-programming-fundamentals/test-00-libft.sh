@@ -5,7 +5,8 @@
 #   ./test_libft.sh /path/to/peer # tests specified directory
 #   ./test_libft.sh --valgrind    # tests with valgrind
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
 TARGET=""
 VALGRIND_FLAG=""
 
