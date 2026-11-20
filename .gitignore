@@ -22,3 +22,7 @@ core.*
 
 # Marqueur temporaire de développement
 .wip
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
