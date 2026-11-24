@@ -1,11 +1,11 @@
 # Test Runner Makefile for Push_swap
 
-PUSH_SWAP_DIR ?= $(abspath ../../../02-push-swap)
+PUSH_SWAP_DIR ?= $(abspath ../../../programming-fundamentals/02-push-swap)
 
 # Autodetect if PUSH_SWAP_DIR does not exist
 ifeq ($(wildcard $(PUSH_SWAP_DIR)/Makefile),)
-    ifneq ($(wildcard ../../../programming-fundamentals/02-push-swap/Makefile),)
-        PUSH_SWAP_DIR = $(abspath ../../../programming-fundamentals/02-push-swap)
+    ifneq ($(wildcard ../../../02-push-swap/Makefile),)
+        PUSH_SWAP_DIR = $(abspath ../../../02-push-swap)
     else ifneq ($(wildcard ../../02-push-swap/Makefile),)
         PUSH_SWAP_DIR = $(abspath ../../02-push-swap)
     else ifneq ($(wildcard ../../../push-swap/Makefile),)

@@ -23,14 +23,18 @@ for arg in "$@"; do
 done
 
 if [ -z "$TARGET" ]; then
-    if [ "$PWD" != "$SCRIPT_DIR" ] && [ -f "${PWD}/Makefile" ]; then
+    if [ "$PWD" != "$SCRIPT_DIR" ] && [ -f "${PWD}/Makefile" ] && [ ! -f "${PWD}/push_swap_tests.py" ]; then
         TARGET="${PWD}"
-    elif [ -d "${ROOT_DIR}/02-push-swap" ]; then
-        TARGET="${ROOT_DIR}/02-push-swap"
     elif [ -d "${SCRIPT_DIR}/../../programming-fundamentals/02-push-swap" ]; then
         TARGET="$(cd "${SCRIPT_DIR}/../../programming-fundamentals/02-push-swap" && pwd)"
     elif [ -d "${SCRIPT_DIR}/../../push-swap" ]; then
         TARGET="$(cd "${SCRIPT_DIR}/../../push-swap" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../push_swap" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../push_swap" && pwd)"
+    elif [ -d "${ROOT_DIR}/../programming-fundamentals/02-push-swap" ]; then
+        TARGET="$(cd "${ROOT_DIR}/../programming-fundamentals/02-push-swap" && pwd)"
+    elif [ -d "${ROOT_DIR}/02-push-swap" ] && [ ! -f "${ROOT_DIR}/02-push-swap/push_swap_tests.py" ]; then
+        TARGET="${ROOT_DIR}/02-push-swap"
     fi
 fi
 
