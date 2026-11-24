@@ -5,6 +5,11 @@ static void crash_strdup_null(void)
 	ft_strdup(NULL);
 }
 
+static void *call_strdup_malloc(void)
+{
+	return (ft_strdup("Hello 42"));
+}
+
 void test_strdup(void)
 {
 	char		*dup;
@@ -85,5 +90,8 @@ void test_strdup(void)
 
 	/* 7. Crash check on NULL */
 	check_crash(crash_strdup_null, "ft_strdup(NULL) raises SIGSEGV (crash attendu)");
+
+	/* 8. Malloc failure check */
+	check_malloc_protection(call_strdup_malloc, "ft_strdup returns NULL and leaves 0 leaks on malloc failure");
 }
 

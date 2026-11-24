@@ -15,6 +15,11 @@ static void crash_strtrim_all_null(void)
 	ft_strtrim(NULL, NULL);
 }
 
+static void *call_strtrim_malloc(void)
+{
+	return (ft_strtrim("   hello world   ", " "));
+}
+
 void test_strtrim(void)
 {
 	char	*res;
@@ -145,4 +150,7 @@ void test_strtrim(void)
 	check_no_crash(crash_strtrim_null_s1, "ft_strtrim(NULL, set) handles NULL s1 safely (no crash)");
 	check_no_crash(crash_strtrim_null_set, "ft_strtrim(s1, NULL) handles NULL set safely (no crash)");
 	check_no_crash(crash_strtrim_all_null, "ft_strtrim(NULL, NULL) handles all NULL safely (no crash)");
+
+	/* 12. Malloc failure check */
+	check_malloc_protection(call_strtrim_malloc, "ft_strtrim returns NULL and leaves 0 leaks on malloc failure");
 }

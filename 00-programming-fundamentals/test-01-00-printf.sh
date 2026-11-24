@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export CCACHE_DISABLE=1
+
 # Usage:
 #   ./test_libftprintf.sh               # tests current directory ($PWD) or libftprintf
 #   ./test_libftprintf.sh /path/to/peer # tests specified directory

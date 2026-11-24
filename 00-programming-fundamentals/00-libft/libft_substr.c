@@ -5,6 +5,11 @@ static void crash_substr_null(void)
 	ft_substr(NULL, 0, 5);
 }
 
+static void *call_substr_malloc(void)
+{
+	return (ft_substr("Hello 42", 0, 5));
+}
+
 void test_substr(void)
 {
 	char		*sub;
@@ -127,4 +132,7 @@ void test_substr(void)
 
 	/* 11. Defensive NULL checks */
 	check_no_crash(crash_substr_null, "ft_substr(NULL, 0, 5) handles NULL safely (no crash)");
+
+	/* 12. Malloc failure check */
+	check_malloc_protection(call_substr_malloc, "ft_substr returns NULL and leaves 0 leaks on malloc failure");
 }

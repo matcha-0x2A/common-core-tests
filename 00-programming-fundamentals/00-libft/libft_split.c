@@ -93,6 +93,62 @@ static void check_split_null_term(char **tab, size_t index, const char *test_nam
 	}
 }
 
+static void test_split_malloc_fail(int fail_at, const char *test_name)
+{
+	pid_t	pid;
+	int		status;
+
+	g_tests_run++;
+	fflush(stdout);
+	pid = fork();
+	if (pid < 0)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (fork failed)\n", RED, RESET, test_name);
+		return ;
+	}
+	if (pid == 0)
+	{
+		set_malloc_dirty(1);
+		int before = get_active_allocs();
+		set_malloc_failure(fail_at);
+		char **res = ft_split("hello world 42", ' ');
+		reset_malloc_failure();
+		if (res != NULL)
+		{
+			free_tab(res);
+			_exit(1);
+		}
+		int after = get_active_allocs();
+		if (after != before)
+			_exit(2);
+		_exit(0);
+	}
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		printf("  [%sOK%s] %s\n", GREEN, RESET, test_name);
+	else if (WIFSIGNALED(status))
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (crashed with signal %d)\n", RED, RESET, test_name, WTERMSIG(status));
+	}
+	else if (WEXITSTATUS(status) == 1)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (expected NULL return, got non-NULL)\n", RED, RESET, test_name);
+	}
+	else if (WEXITSTATUS(status) == 2)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (memory leak: allocated blocks not freed on error)\n", RED, RESET, test_name);
+	}
+	else
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (exited with error %d)\n", RED, RESET, test_name, WEXITSTATUS(status));
+	}
+}
+
 void test_split(void)
 {
 	char	**tab;
@@ -195,5 +251,11 @@ void test_split(void)
 
 	/* 10. NULL string input */
 	test_split_null();
+
+	/* 11. Malloc failure injection tests */
+	test_split_malloc_fail(1, "ft_split handles malloc fail #1 (array alloc) cleanly");
+	test_split_malloc_fail(2, "ft_split handles malloc fail #2 (1st word alloc) cleanly");
+	test_split_malloc_fail(3, "ft_split handles malloc fail #3 (2nd word alloc) cleanly");
+	test_split_malloc_fail(4, "ft_split handles malloc fail #4 (3rd word alloc) cleanly");
 }
 

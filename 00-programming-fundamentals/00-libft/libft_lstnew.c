@@ -1,5 +1,10 @@
 #include "libft_tests.h"
 
+static void *call_lstnew_malloc(void)
+{
+	return (ft_lstnew("hello"));
+}
+
 void test_lstnew(void)
 {
 	char	str[] = "Hello 42";
@@ -72,5 +77,8 @@ void test_lstnew(void)
 		check(n2->next == NULL, "n2 next is NULL");
 		free(n2);
 	}
+
+	/* 6. Malloc failure check */
+	check_malloc_protection(call_lstnew_malloc, "ft_lstnew returns NULL and leaves 0 leaks on malloc failure");
 }
 

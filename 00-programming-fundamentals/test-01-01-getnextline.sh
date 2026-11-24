@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export CCACHE_DISABLE=1
+
 # Usage:
 #   ./test_getnextline.sh               # tests current directory ($PWD) or getnextline
 #   ./test_getnextline.sh /path/to/peer # tests specified directory

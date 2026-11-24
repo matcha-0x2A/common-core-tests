@@ -25,6 +25,11 @@ void check(int condition, const char *test_name);
 void check_str(const char *got, const char *expected, const char *test_name);
 void check_ptr(const void *got, const void *expected, const char *test_name);
 
+void set_malloc_failure(int nth);
+void reset_malloc_failure(void);
+void set_malloc_dirty(int enable);
+int  get_active_allocs(void);
+
 void test_invalid_fd(void);
 void test_empty_file(void);
 void test_single_line_with_nl(void);
@@ -33,5 +38,6 @@ void test_multiple_lines(void);
 void test_consecutive_newlines(void);
 void test_stdin(void);
 void test_main_loop_simulation(void);
+void test_malloc_failures(void);
 
 #endif

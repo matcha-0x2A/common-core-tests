@@ -49,6 +49,11 @@ static void	crash_strmapi_all_null(void)
 	ft_strmapi(NULL, NULL);
 }
 
+static void *call_strmapi_malloc(void)
+{
+	return (ft_strmapi("hello world", map_toupper));
+}
+
 void test_strmapi(void)
 {
 	char		*res;
@@ -130,4 +135,7 @@ void test_strmapi(void)
 	check(ft_strmapi("hello", NULL) == NULL, "ft_strmapi(s, NULL) returns NULL");
 	check_no_crash(crash_strmapi_all_null, "ft_strmapi(NULL, NULL) handles all NULL safely (no crash)");
 	check(ft_strmapi(NULL, NULL) == NULL, "ft_strmapi(NULL, NULL) returns NULL");
+
+	/* 9. Malloc failure check */
+	check_malloc_protection(call_strmapi_malloc, "ft_strmapi returns NULL and leaves 0 leaks on malloc failure");
 }

@@ -1,5 +1,10 @@
 #include "libft_tests.h"
 
+static void *call_calloc_malloc(void)
+{
+	return (ft_calloc(10, sizeof(int)));
+}
+
 void test_calloc(void)
 {
 	void	*ptr;
@@ -130,5 +135,8 @@ void test_calloc(void)
 		"ft_calloc(SIZE_MAX, 1) returns NULL (impossible size)");
 	check(ft_calloc(1, SIZE_MAX) == NULL,
 		"ft_calloc(1, SIZE_MAX) returns NULL (impossible size)");
+
+	/* 6. Malloc failure check */
+	check_malloc_protection(call_calloc_malloc, "ft_calloc returns NULL on allocation failure");
 }
 

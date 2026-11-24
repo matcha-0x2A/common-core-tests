@@ -1,11 +1,13 @@
 NAME = run_tests
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
+export CCACHE_DISABLE ?= 1
 
 PRINTF_DIR ?= $(abspath ../../libftprintf)
 LIBFTPRINTF = $(PRINTF_DIR)/libftprintf.a
 
 SRCS = printf_tests.c
+DEPS = $(wildcard *.h) $(wildcard $(PRINTF_DIR)/*.h)
 
 all: $(NAME)
 	@if [ -f "$(PRINTF_DIR)/.wip" ]; then \
@@ -15,11 +17,13 @@ all: $(NAME)
 		./$(NAME); \
 	fi
 
-$(NAME): $(LIBFTPRINTF) $(SRCS)
+$(NAME): $(LIBFTPRINTF) $(SRCS) $(DEPS)
 	@$(CC) $(CFLAGS) $(SRCS) $(LIBFTPRINTF) -I$(PRINTF_DIR) -I. -o $(NAME)
 
-$(LIBFTPRINTF):
+$(LIBFTPRINTF): FORCE
 	@$(MAKE) -C $(PRINTF_DIR)
+
+FORCE:
 
 valgrind: $(NAME)
 	@if [ -f "$(PRINTF_DIR)/.wip" ]; then \
@@ -36,4 +40,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all valgrind clean fclean re
+.PHONY: all valgrind clean fclean re FORCE

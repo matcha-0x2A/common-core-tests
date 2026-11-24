@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export CCACHE_DISABLE=1
+
 # Usage:
 #   ./test_push_swap.sh               # tests current directory ($PWD) or 02-push-swap
 #   ./test_push_swap.sh /path/to/peer # tests specified directory

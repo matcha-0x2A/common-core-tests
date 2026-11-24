@@ -1,4 +1,5 @@
 #include "gnl_tests.h"
+#include <sys/wait.h>
 
 const char *g_failed_names[MAX_FAILED_LOG];
 int g_failed_count = 0;
@@ -264,6 +265,77 @@ void test_main_loop_simulation(void)
 	unlink(file);
 }
 
+static void check_gnl_malloc_fail(int fail_at, const char *test_name)
+{
+	pid_t	pid;
+	int		status;
+	const char *file = "/tmp/gnl_malloc_test.txt";
+
+	create_temp_file(file, "Line 1: Hello 42 World\nLine 2: Second line\n");
+	g_tests_run++;
+	fflush(stdout);
+	pid = fork();
+	if (pid < 0)
+	{
+		record_failure(test_name);
+		unlink(file);
+		return ;
+	}
+	if (pid == 0)
+	{
+		int fd = open(file, O_RDONLY);
+		if (fd < 0)
+			_exit(3);
+		set_malloc_dirty(1);
+		int before = get_active_allocs();
+		set_malloc_failure(fail_at);
+		char *line = get_next_line(fd);
+		reset_malloc_failure();
+		close(fd);
+		if (line != NULL)
+		{
+			free(line);
+			_exit(1);
+		}
+		int after = get_active_allocs();
+		if (after != before)
+			_exit(2);
+		_exit(0);
+	}
+	waitpid(pid, &status, 0);
+	unlink(file);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		printf("  [%sOK%s] %s\n", GREEN, RESET, test_name);
+	else if (WIFSIGNALED(status))
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (crashed with signal %d)\n", RED, RESET, test_name, WTERMSIG(status));
+	}
+	else if (WEXITSTATUS(status) == 1)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (expected NULL return, got non-NULL)\n", RED, RESET, test_name);
+	}
+	else if (WEXITSTATUS(status) == 2)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (memory leak: allocated blocks not freed on error)\n", RED, RESET, test_name);
+	}
+	else
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (exited with error %d)\n", RED, RESET, test_name, WEXITSTATUS(status));
+	}
+}
+
+void test_malloc_failures(void)
+{
+	printf("\n%s--- Test Malloc Failures ---%s\n", CYAN, RESET);
+	check_gnl_malloc_fail(1, "GNL handles malloc failure #1 safely");
+	check_gnl_malloc_fail(2, "GNL handles malloc failure #2 safely");
+	check_gnl_malloc_fail(3, "GNL handles malloc failure #3 safely");
+}
+
 int main(void)
 {
 	printf("%s=== GetNextLine Test Suite (BUFFER_SIZE=%d) ===%s\n", BLUE, BUFFER_SIZE, RESET);
@@ -276,6 +348,7 @@ int main(void)
 	test_consecutive_newlines();
 	test_stdin();
 	test_main_loop_simulation();
+	test_malloc_failures();
 
 	printf("\n%s========================================%s\n", BLUE, RESET);
 	printf("Tests run: %d | Passed: %s%d%s | Failed: %s%d%s\n",

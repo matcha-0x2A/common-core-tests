@@ -94,6 +94,65 @@ static void crash_lstmap_all_null(void)
 	ft_lstmap(NULL, NULL, NULL);
 }
 
+static void test_lstmap_malloc_fail(int fail_at, const char *test_name)
+{
+	pid_t	pid;
+	int		status;
+
+	g_tests_run++;
+	fflush(stdout);
+	pid = fork();
+	if (pid < 0)
+	{
+		record_failure(test_name);
+		return ;
+	}
+	if (pid == 0)
+	{
+		t_list *head = ft_lstnew((void *)(intptr_t)1);
+		head->next = ft_lstnew((void *)(intptr_t)2);
+		head->next->next = ft_lstnew((void *)(intptr_t)3);
+		set_malloc_dirty(1);
+		int before = get_active_allocs();
+		set_malloc_failure(fail_at);
+		t_list *res = ft_lstmap(head, map_add_500, map_dummy_del);
+		reset_malloc_failure();
+		ft_lstclear(&head, map_dummy_del);
+		if (res != NULL)
+		{
+			ft_lstclear(&res, map_dummy_del);
+			_exit(1);
+		}
+		int after = get_active_allocs();
+		if (after != before - 3)
+			_exit(2);
+		_exit(0);
+	}
+	waitpid(pid, &status, 0);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+		printf("  [%sOK%s] %s\n", GREEN, RESET, test_name);
+	else if (WIFSIGNALED(status))
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (crashed with signal %d)\n", RED, RESET, test_name, WTERMSIG(status));
+	}
+	else if (WEXITSTATUS(status) == 1)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (expected NULL return, got non-NULL)\n", RED, RESET, test_name);
+	}
+	else if (WEXITSTATUS(status) == 2)
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (memory leak: nodes not freed on error)\n", RED, RESET, test_name);
+	}
+	else
+	{
+		record_failure(test_name);
+		printf("  [%sFAIL%s] %s (exited with error %d)\n", RED, RESET, test_name, WEXITSTATUS(status));
+	}
+}
+
 void test_lstmap(void)
 {
 	t_list	*head;
@@ -265,5 +324,10 @@ void test_lstmap(void)
 	check_no_crash(crash_lstmap_null_f, "ft_lstmap(head, NULL, del) handles NULL f safely (no crash)");
 	check_no_crash(crash_lstmap_null_del, "ft_lstmap(head, f, NULL) handles NULL del safely (no crash)");
 	check_no_crash(crash_lstmap_all_null, "ft_lstmap(NULL, NULL, NULL) handles all NULL safely (no crash)");
+
+	/* 9. Malloc failure checks */
+	test_lstmap_malloc_fail(1, "ft_lstmap handles malloc fail on node 1 cleanly");
+	test_lstmap_malloc_fail(2, "ft_lstmap handles malloc fail on node 2 cleanly (clears node 1)");
+	test_lstmap_malloc_fail(3, "ft_lstmap handles malloc fail on node 3 cleanly (clears nodes 1-2)");
 }
 

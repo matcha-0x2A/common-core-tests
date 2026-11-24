@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+export CCACHE_DISABLE=1
+
 # Usage:
 #   ./test_libft.sh               # tests current directory ($PWD)
 #   ./test_libft.sh /path/to/peer # tests specified directory

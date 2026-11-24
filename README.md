@@ -9,10 +9,12 @@ Ce dépôt est totalement autonome et non-intrusif : il permet d'évaluer ses pr
 ## 🚀 Fonctionnalités Clés
 
 - **Isolation par sous-processus (`fork`)** : Les crashs (`SIGSEGV`, `SIGBUS`, etc.) sont interceptés sans interrompre le runner de test.
-- **Audit mémoire in-process (`libft_mem_tracker`)** : Interception au runtime (`-Wl,--wrap=malloc`, `calloc`, `free`) pour détecter au byte près les fuites, double-frees et frees invalides.
+- **Audit mémoire in-process (`libft_mem_tracker`, `gnl_mem_tracker`)** : Interception au runtime (`-Wl,--wrap=malloc`, `calloc`, `free`) pour détecter au byte près les fuites, double-frees et frees invalides.
+- **Injection de pannes `malloc` & mémoire sale (`0xAA`)** : Simulation systématique de heap non initialisé (`0xAA`) et d'échecs d'allocation mémoire pour vérifier que les fonctions retournent `NULL`, libèrent tous les blocs déjà alloués (0 leak) et ne crashent pas (`free(): invalid pointer`).
+- **Recompilation automatique de la cible (`FORCE`)** : Toute modification apportée aux sources ou headers (`.c`, `.h`) du projet cible est automatiquement détectée et recompilée à la volée, sans re-link superflu si aucun fichier n'a changé.
 - **Checker de référence intégré pour `push_swap`** : Simulation et validation pas à pas des piles `a` et `b`, statistiques et barème officiel 42 ($< 700$ pour 100, $< 5500$ pour 500).
 - **Intégration Valgrind complète** : Détection des lectures/écritures invalides et vérification d'absence totale de fuites (`--leak-check=full`).
-- **Scripts d'évaluation portables** : Un script par projet (`test_<projet>.sh`), exécutable depuis n'importe quel dossier ou sur un chemin cible.
+- **Scripts d'évaluation portables** : Un script par projet (`test_<projet>.sh`), exécutable depuis n'importe quel dossier ou sur un chemin cible, avec gestion transparente du cache de compilation (`CCACHE_DISABLE=1`).
 - **Mode `.wip` informatif** : Si un marqueur `.wip` est présent dans le projet cible, les erreurs ne bloquent pas le build (utile en cours de développement).
 
 ---
@@ -40,9 +42,9 @@ common-core-tests/
 ├── test_libftprintf.sh      # Script d'évaluation autonome pour ft_printf
 ├── test_push_swap.sh        # Script d'évaluation autonome pour push_swap
 ├── 00-programming-fundamentals/
-│   ├── 00-libft/            # Tests unitaires et wrappers d'allocation mémoire
+│   ├── 00-libft/            # Tests unitaires, fault injection malloc et wrappers mémoire
 │   ├── 01-00-printf/        # Tests différentiels printf
-│   ├── 01-01-getnextline/   # Tests automatiques et main interactif
+│   ├── 01-01-getnextline/   # Tests automatiques, fault injection malloc et main interactif
 │   └── 02-push-swap/        # Checker de référence, permutations aléatoires, benchmarks
 └── 02-object-oriented-programming/ # Suites de tests unitaires Python (00-growing-code .. 04-03-funcmage)
 ```

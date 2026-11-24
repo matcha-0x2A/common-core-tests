@@ -3,10 +3,12 @@
 NAME = run_tests
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
+export CCACHE_DISABLE ?= 1
 LIBFT_DIR ?= $(abspath ../../libft)
 LIBFT = $(LIBFT_DIR)/libft.a
 
 SRCS = $(wildcard libft_*.c)
+DEPS = $(wildcard *.h) $(wildcard $(LIBFT_DIR)/*.h)
 
 all: $(NAME)
 	@if [ -f "$(LIBFT_DIR)/.wip" ]; then \
@@ -16,11 +18,13 @@ all: $(NAME)
 		./$(NAME); \
 	fi
 
-$(NAME): $(LIBFT) $(SRCS)
+$(NAME): $(LIBFT) $(SRCS) $(DEPS)
 	@$(CC) $(CFLAGS) -Wl,--wrap=malloc -Wl,--wrap=free -Wl,--wrap=calloc $(SRCS) $(LIBFT) -I$(LIBFT_DIR) -I. -o $(NAME)
 
-$(LIBFT):
+$(LIBFT): FORCE
 	@$(MAKE) -C $(LIBFT_DIR)
+
+FORCE:
 
 valgrind: $(NAME)
 	@if [ -f "$(LIBFT_DIR)/.wip" ]; then \
@@ -37,4 +41,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all clean fclean re valgrind
+.PHONY: all clean fclean re valgrind FORCE

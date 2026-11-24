@@ -48,7 +48,12 @@ void check_ptr(const void *got, const void *expected, const char *test_name);
 void check_cmp(int got, int expected, const char *test_name);
 void check_crash(void (*func)(void), const char *test_name);
 void check_no_crash(void (*func)(void), const char *test_name);
+void check_malloc_nth_protection(void *(*func)(void), int nth, const char *test_name);
+void check_malloc_protection(void *(*func)(void), const char *test_name);
 int  get_active_allocs(void);
+void set_malloc_failure(int nth);
+void reset_malloc_failure(void);
+void set_malloc_dirty(int enable);
 
 /* Test prototypes */
 void test_isalpha(void);

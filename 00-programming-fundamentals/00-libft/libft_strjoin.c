@@ -15,6 +15,11 @@ static void crash_strjoin_all_null(void)
 	ft_strjoin(NULL, NULL);
 }
 
+static void *call_strjoin_malloc(void)
+{
+	return (ft_strjoin("hello ", "world"));
+}
+
 void test_strjoin(void)
 {
 	char	*res;
@@ -118,4 +123,7 @@ void test_strjoin(void)
 	check_no_crash(crash_strjoin_null_s1, "ft_strjoin(NULL, s2) handles NULL s1 safely (no crash)");
 	check_no_crash(crash_strjoin_null_s2, "ft_strjoin(s1, NULL) handles NULL s2 safely (no crash)");
 	check_no_crash(crash_strjoin_all_null, "ft_strjoin(NULL, NULL) handles all NULL safely (no crash)");
+
+	/* 10. Malloc failure check */
+	check_malloc_protection(call_strjoin_malloc, "ft_strjoin returns NULL and leaves 0 leaks on malloc failure");
 }

@@ -14,6 +14,11 @@ static void check_case(int n, const char *expected, const char *desc)
 	free(res);
 }
 
+static void *call_itoa_malloc(void)
+{
+	return (ft_itoa(42));
+}
+
 void test_itoa(void)
 {
 	printf("\n--- Testing ft_itoa ---\n");
@@ -54,4 +59,7 @@ void test_itoa(void)
 	check_case(2147483646, "2147483646", "ft_itoa(INT_MAX - 1) == \"2147483646\"");
 	check_case(-2147483648, "-2147483648", "ft_itoa(INT_MIN) == \"-2147483648\"");
 	check_case(-2147483647, "-2147483647", "ft_itoa(INT_MIN + 1) == \"-2147483647\"");
+
+	/* 8. Malloc failure check */
+	check_malloc_protection(call_itoa_malloc, "ft_itoa returns NULL and leaves 0 leaks on malloc failure");
 }

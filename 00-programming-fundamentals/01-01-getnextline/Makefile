@@ -2,11 +2,14 @@ NAME = run_tests
 CC = cc
 BUFFER_SIZE ?= 42
 CFLAGS = -Wall -Wextra -Werror -D BUFFER_SIZE=$(BUFFER_SIZE)
+export CCACHE_DISABLE ?= 1
 
 GNL_DIR ?= $(abspath ../../getnextline)
 SRCS = $(GNL_DIR)/get_next_line.c \
        $(GNL_DIR)/get_next_line_utils.c \
-       gnl_tests.c
+       gnl_tests.c \
+       gnl_mem_tracker.c
+DEPS = $(wildcard *.h) $(wildcard $(GNL_DIR)/*.h)
 
 MAIN_NAME = gnl_main
 MAIN_SRCS = $(GNL_DIR)/get_next_line.c \
@@ -21,12 +24,12 @@ all: $(NAME)
 		./$(NAME); \
 	fi
 
-$(NAME): $(SRCS)
-	@$(CC) $(CFLAGS) $(SRCS) -I$(GNL_DIR) -I. -o $(NAME)
+$(NAME): $(SRCS) $(DEPS)
+	@$(CC) $(CFLAGS) -Wl,--wrap=malloc -Wl,--wrap=free -Wl,--wrap=calloc $(SRCS) -I$(GNL_DIR) -I. -o $(NAME)
 
 main: $(MAIN_NAME)
 
-$(MAIN_NAME): $(MAIN_SRCS)
+$(MAIN_NAME): $(MAIN_SRCS) $(DEPS)
 	@$(CC) $(CFLAGS) $(MAIN_SRCS) -I$(GNL_DIR) -I. -o $(MAIN_NAME)
 
 valgrind: $(NAME)
