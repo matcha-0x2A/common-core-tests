@@ -22,6 +22,14 @@ L'ensemble des tests est structuré par module d'apprentissage du cursus 42 :
   > - **`01-01-getnextline`** : gestion multi-fd, variations de `BUFFER_SIZE`, audit anti-leak.
   > - **`02-push-swap`** : conformité grille de soutenance v1.2 (14 questions), validation README, Norminette, Valgrind, benchmarks 100/500 ops.
 
+- 🐧 [**01-systems-and-networks-administration/README.md**](file:///home/mchambon/wip/42/common-core-tests/01-systems-and-networks-administration/README.md)
+  > Audit de conformité complet pour la virtualisation et l'administration système :
+  > - **** : validation SSH, UFW, Sudo strict, PAM pwquality, LVM sur LUKS, monitoring et mapping de port VirtualBox.
+
+- 🐧 [**01-systems-and-networks-administration/README.md**](file:///home/mchambon/wip/42/common-core-tests/01-systems-and-networks-administration/README.md)
+  > Audit de conformité complet pour la virtualisation et l'administration système :
+  > - **`00-born2beroot`** : validation SSH, UFW, Sudo strict, PAM pwquality, LVM sur LUKS, monitoring et mapping de port VirtualBox.
+
 - 🐍 [**02-object-oriented-programming/README.md**](file:///home/mchambon/wip/42/common-core-tests/02-object-oriented-programming/README.md)
   > Suites de validation et tests unitaires pour la filière Python :
   > - **`00-growing-code`** à **`04-03-funcmage`** : validation de conformité Flake8 (PEP 8) et suites `unittest`.
@@ -92,6 +100,10 @@ Chaque script peut être exécuté directement en lui passant (ou non) le chemin
 ./00-programming-fundamentals/test-01-00-printf.sh [/chemin/vers/ft_printf] [--valgrind]
 ./00-programming-fundamentals/test-01-01-getnextline.sh [/chemin/vers/get_next_line] [-b BUFFER_SIZE] [--valgrind]
 ./00-programming-fundamentals/test-02-push-swap.sh [/chemin/vers/push_swap] [--valgrind]
+
+# Sysadmin - Administration Système & Réseau
+./01-systems-and-networks-administration/test-00-born2beroot.sh [--auto] [-u <user>] [-p <pass>] [-r <root_pass>]
+make born2beroot
 
 # Python - Programmation orientée objet
 ./02-object-oriented-programming/test-00-growing-code.sh [/chemin/vers/00-growing-code]

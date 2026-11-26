@@ -12,6 +12,9 @@ help:
 	@echo "  ./00-programming-fundamentals/test-01-01-getnextline.sh [/path/to/01-01-getnextline] [--valgrind] [-b BUFFER_SIZE]"
 	@echo "  ./00-programming-fundamentals/test-02-push-swap.sh [/path/to/02-push-swap] [--valgrind]"
 	@echo ""
+	@echo "01-systems-and-networks-administration (Sysadmin audit) :"
+	@echo "  ./01-systems-and-networks-administration/test-00-born2beroot.sh [/path/to/00-born2beroot] [--auto]"
+	@echo ""
 	@echo "02-object-oriented-programming (Python suites) :"
 	@echo "  ./02-object-oriented-programming/test-<module>.sh [/path/to/<module>]"
 	@echo "  ./02-object-oriented-programming/test-00-growing-code-main.sh [--auto|--interactive]"
@@ -56,6 +59,15 @@ fclean:
 
 re: fclean all
 
+
+# Systems & Networks Administration
+SYSADMIN_DIR = 01-systems-and-networks-administration
+
+00-born2beroot born2beroot:
+	@./$(SYSADMIN_DIR)/test-00-born2beroot.sh $(ARGS)
+
+sysadmin-tests: born2beroot
+
 # Python modules
 OOP_DIR = 02-object-oriented-programming
 PYTHON_MODULES = 00-growing-code 01-code-cultivation 02-garden-guardian \
@@ -73,7 +85,7 @@ python-tests: $(PYTHON_MODULES)
 
 c-tests: 00-libft 01-00-printf 01-01-getnextline 02-push-swap
 
-.PHONY: all help clean fclean re c-tests python-tests \
+.PHONY: all help 00-born2beroot born2beroot sysadmin-tests clean fclean re c-tests python-tests \
         00-libft libft 01-00-printf libftprintf 01-01-getnextline getnextline \
         02-push-swap push_swap push-swap \
         $(PYTHON_MODULES) 00-growing-code-main
