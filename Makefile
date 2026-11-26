@@ -7,13 +7,14 @@ help:
 	@echo "============================"
 	@echo ""
 	@echo "00-programming-fundamentals (C suites) :"
-	@echo "  ./test-00-libft.sh [/path/to/00-libft] [--valgrind]"
-	@echo "  ./test-01-00-printf.sh [/path/to/01-00-printf] [--valgrind]"
-	@echo "  ./test-01-01-getnextline.sh [/path/to/01-01-getnextline] [--valgrind] [-b BUFFER_SIZE]"
-	@echo "  ./test-02-push-swap.sh [/path/to/02-push-swap] [--valgrind]"
+	@echo "  ./00-programming-fundamentals/test-00-libft.sh [/path/to/00-libft] [--valgrind]"
+	@echo "  ./00-programming-fundamentals/test-01-00-printf.sh [/path/to/01-00-printf] [--valgrind]"
+	@echo "  ./00-programming-fundamentals/test-01-01-getnextline.sh [/path/to/01-01-getnextline] [--valgrind] [-b BUFFER_SIZE]"
+	@echo "  ./00-programming-fundamentals/test-02-push-swap.sh [/path/to/02-push-swap] [--valgrind]"
 	@echo ""
 	@echo "02-object-oriented-programming (Python suites) :"
 	@echo "  ./02-object-oriented-programming/test-<module>.sh [/path/to/<module>]"
+	@echo "  ./02-object-oriented-programming/test-00-growing-code-main.sh [--auto|--interactive]"
 	@echo "  (Modules : 00-growing-code, 01-code-cultivation, 02-garden-guardian,"
 	@echo "             03-00-data-quest, 03-01-data-archivist, 03-02-nexus,"
 	@echo "             03-03-the-codex, 04-00-datadeck, 04-01-the-matrix,"
@@ -65,6 +66,9 @@ PYTHON_MODULES = 00-growing-code 01-code-cultivation 02-garden-guardian \
 $(PYTHON_MODULES):
 	@./$(OOP_DIR)/test-$@.sh
 
+00-growing-code-main:
+	@./$(OOP_DIR)/test-00-growing-code-main.sh
+
 python-tests: $(PYTHON_MODULES)
 
 c-tests: 00-libft 01-00-printf 01-01-getnextline 02-push-swap
@@ -72,4 +76,4 @@ c-tests: 00-libft 01-00-printf 01-01-getnextline 02-push-swap
 .PHONY: all help clean fclean re c-tests python-tests \
         00-libft libft 01-00-printf libftprintf 01-01-getnextline getnextline \
         02-push-swap push_swap push-swap \
-        $(PYTHON_MODULES)
+        $(PYTHON_MODULES) 00-growing-code-main

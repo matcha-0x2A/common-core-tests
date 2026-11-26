@@ -1,1 +1,0 @@
-00-programming-fundamentals/test-01-00-printf.sh

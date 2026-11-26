@@ -36,8 +36,12 @@ done
 if [ -z "$TARGET" ]; then
     if [ -f "${PWD}/get_next_line.c" ]; then
         TARGET="${PWD}"
-    elif [ -d "${ROOT_DIR}/getnextline" ]; then
-        TARGET="${ROOT_DIR}/getnextline"
+    elif [ -d "${SCRIPT_DIR}/../../programming-fundamentals/01-01-getnextline" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../programming-fundamentals/01-01-getnextline" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../getnextline" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../getnextline" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../get_next_line" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../get_next_line" && pwd)"
     fi
 fi
 

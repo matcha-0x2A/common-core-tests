@@ -1,1 +1,0 @@
-00-programming-fundamentals/test-02-push-swap.sh

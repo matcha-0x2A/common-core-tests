@@ -3,7 +3,7 @@ CC = cc
 CFLAGS = -Wall -Wextra -Werror
 export CCACHE_DISABLE ?= 1
 
-PRINTF_DIR ?= $(abspath ../../libftprintf)
+PRINTF_DIR ?= $(shell [ -d "../../../programming-fundamentals/01-00-printf" ] && echo "$$(cd ../../../programming-fundamentals/01-00-printf && pwd)" || echo "$$(cd ../../../libftprintf 2>/dev/null && pwd || echo ../../../libftprintf)")
 LIBFTPRINTF = $(PRINTF_DIR)/libftprintf.a
 
 SRCS = printf_tests.c

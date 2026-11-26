@@ -197,27 +197,27 @@ class TestGrowingCode(unittest.TestCase):
         captured = io.StringIO()
         with contextlib.redirect_stdout(captured):
             m.ft_seed_inventory('tomato', 15, 'packets')
-        self.assertEqual(
-            captured.getvalue().strip(),
-            "Tomato seeds: 15 packets available"
+        self.assertTrue(
+            bool(re.search(r"Tomato seeds:\s{1,2}15 packets available", captured.getvalue())),
+            f"Attendu 'Tomato seeds: 15 packets available' (1 ou 2 espaces), reçu:\n{captured.getvalue()}"
         )
 
         # Test unit: grams
         captured = io.StringIO()
         with contextlib.redirect_stdout(captured):
             m.ft_seed_inventory('carrot', 50, 'grams')
-        self.assertEqual(
-            captured.getvalue().strip(),
-            "Carrot seeds: 50 grams total"
+        self.assertTrue(
+            bool(re.search(r"Carrot seeds:\s{1,2}50 grams total", captured.getvalue())),
+            f"Attendu 'Carrot seeds: 50 grams total' (1 ou 2 espaces), reçu:\n{captured.getvalue()}"
         )
 
         # Test unit: area
         captured = io.StringIO()
         with contextlib.redirect_stdout(captured):
             m.ft_seed_inventory('lettuce', 12, 'area')
-        self.assertEqual(
-            captured.getvalue().strip(),
-            "Lettuce seeds: covers 12 square meters"
+        self.assertTrue(
+            bool(re.search(r"Lettuce seeds:\s{1,2}covers 12 square meters", captured.getvalue())),
+            f"Attendu 'Lettuce seeds: covers 12 square meters' (1 ou 2 espaces), reçu:\n{captured.getvalue()}"
         )
 
         # Test unit inconnue

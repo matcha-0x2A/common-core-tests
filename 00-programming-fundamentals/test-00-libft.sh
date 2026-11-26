@@ -23,8 +23,10 @@ done
 if [ -z "$TARGET" ]; then
     if [ "$PWD" != "$SCRIPT_DIR" ] && [ -f "${PWD}/Makefile" ]; then
         TARGET="${PWD}"
-    elif [ -d "${SCRIPT_DIR}/../libft" ]; then
-        TARGET="$(cd "${SCRIPT_DIR}/../libft" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../programming-fundamentals/00-libft" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../programming-fundamentals/00-libft" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../libft" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../libft" && pwd)"
     fi
 fi
 

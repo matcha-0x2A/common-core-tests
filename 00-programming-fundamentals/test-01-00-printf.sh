@@ -25,8 +25,12 @@ done
 if [ -z "$TARGET" ]; then
     if [ "$PWD" != "$SCRIPT_DIR" ] && [ -f "${PWD}/Makefile" ]; then
         TARGET="${PWD}"
-    elif [ -d "${ROOT_DIR}/libftprintf" ]; then
-        TARGET="${ROOT_DIR}/libftprintf"
+    elif [ -d "${SCRIPT_DIR}/../../programming-fundamentals/01-00-printf" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../programming-fundamentals/01-00-printf" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../libftprintf" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../libftprintf" && pwd)"
+    elif [ -d "${SCRIPT_DIR}/../../printf" ]; then
+        TARGET="$(cd "${SCRIPT_DIR}/../../printf" && pwd)"
     fi
 fi
 

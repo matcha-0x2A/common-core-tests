@@ -1,1 +1,0 @@
-00-programming-fundamentals/test-00-libft.sh

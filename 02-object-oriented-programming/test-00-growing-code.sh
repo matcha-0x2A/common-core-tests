@@ -6,12 +6,23 @@
 # ==============================================================================
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
 SUBJECT="00-growing-code"
 TARGET=""
+WITH_MAIN=0
 
 for arg in "$@"; do
-    TARGET="$(cd "$arg" 2>/dev/null && pwd || echo "$arg")"
+    case "$arg" in
+        --with-main|--all|-a)
+            WITH_MAIN=1
+            ;;
+        *)
+            if [ -d "$arg" ]; then
+                TARGET="$(cd "$arg" 2>/dev/null && pwd || echo "$arg")"
+            fi
+            ;;
+    esac
 done
 
 if [ -z "$TARGET" ]; then
@@ -59,6 +70,13 @@ if [ -d "${TESTS_DIR}" ]; then
     fi
 else
     echo "ℹ️ Aucune suite de test unitaire définie pour ${SUBJECT}."
+fi
+
+# 3. Exécution optionnelle du helper main.py
+if [ "$WITH_MAIN" -eq 1 ]; then
+    echo ""
+    echo "--- 🚀 Étape 3 : Exécution du programme test (main.py) ---"
+    "${SCRIPT_DIR}/test-00-growing-code-main.sh" "${TARGET}" --auto
 fi
 
 echo ""

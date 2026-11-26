@@ -4,7 +4,7 @@ BUFFER_SIZE ?= 42
 CFLAGS = -Wall -Wextra -Werror -D BUFFER_SIZE=$(BUFFER_SIZE)
 export CCACHE_DISABLE ?= 1
 
-GNL_DIR ?= $(abspath ../../getnextline)
+GNL_DIR ?= $(shell [ -d "../../../programming-fundamentals/01-01-getnextline" ] && echo "$$(cd ../../../programming-fundamentals/01-01-getnextline && pwd)" || echo "$$(cd ../../../getnextline 2>/dev/null && pwd || echo ../../../getnextline)")
 SRCS = $(GNL_DIR)/get_next_line.c \
        $(GNL_DIR)/get_next_line_utils.c \
        gnl_tests.c \

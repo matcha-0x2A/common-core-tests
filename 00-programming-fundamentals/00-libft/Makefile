@@ -4,7 +4,7 @@ NAME = run_tests
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
 export CCACHE_DISABLE ?= 1
-LIBFT_DIR ?= $(abspath ../../libft)
+LIBFT_DIR ?= $(shell [ -d "../../../programming-fundamentals/00-libft" ] && echo "$$(cd ../../../programming-fundamentals/00-libft && pwd)" || echo "$$(cd ../../../libft 2>/dev/null && pwd || echo ../../../libft)")
 LIBFT = $(LIBFT_DIR)/libft.a
 
 SRCS = $(wildcard libft_*.c)
