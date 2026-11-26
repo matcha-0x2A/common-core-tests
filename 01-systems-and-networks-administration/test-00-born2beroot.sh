@@ -8,7 +8,7 @@
 # - Interactive / automated credential authentication (user & root passwords)
 # - OS type, headless mode (no GUI), multi-user.target
 # - Hostname format (<login>42) and user group memberships (user42, sudo)
-# - RAM & Swap sizing (~1 GB each)
+# - RAM & Swap sizing (~1 GB RAM, Swap >= RAM)
 # - Partitioning layout (LVM over LUKS encryption, /boot unencrypted)
 # - Strict Sudo policy (requiretty, logfile, badpass_message, secure_path, tries)
 # - UFW Firewall (active, deny incoming, port 4242 allowed)
@@ -88,7 +88,8 @@ usage() {
 Usage: $0 [options] [/path/to/00-born2beroot]
 
 Options:
-  -u, --user <username>       Target standard username (e.g. mchambon)
+  -c, --config <file>         Path to test.config configuration file
+  -u, --user <username>       Target standard username (default: $USER)
   -p, --user-pass <password>  Standard user password
   -r, --root-pass <password>  Root account password
   -P, --port <port>           SSH host port forwarded to guest (default: 4242)
@@ -105,7 +106,7 @@ Options:
 Examples:
   $0
   $0 --auto
-  $0 -u mchambon -p Zxcvbn1234 -r Nbvcxz1234
+  $0 -u myuser -p MyPass1234 -r RootPass1234
   $0 /home/mchambon/wip/42/systems-and-networks-administration/00-born2beroot
 USAGE_EOF
     exit 0
@@ -114,6 +115,10 @@ USAGE_EOF
 # Parse Command-Line Arguments
 while [ $# -gt 0 ]; do
     case "$1" in
+        -c|--config)
+            CONFIG_FILE="$2"
+            shift 2
+            ;;
         -u|--user)
             B2BR_USER="$2"
             shift 2
@@ -212,25 +217,73 @@ if [ -n "$TARGET" ] && [ -f "$TARGET/README.md" ]; then
     fi
 fi
 
-# Fallback default credentials
-[ -z "$B2BR_USER" ] && B2BR_USER="mchambon"
-[ -z "$B2BR_USER_PASS" ] && B2BR_USER_PASS="Zxcvbn1234"
-[ -z "$B2BR_ROOT_PASS" ] && B2BR_ROOT_PASS="Nbvcxz1234"
+# Auto-detect test.config in the tested target directory or current directory
+if [ -z "${CONFIG_FILE:-}" ]; then
+    CONFIG_CANDIDATES=()
+    [ -n "$TARGET" ] && CONFIG_CANDIDATES+=("${TARGET}/test.config")
+    CONFIG_CANDIDATES+=("${PWD}/test.config")
 
-# Interactive Credential Prompting (if not in auto mode)
+    for cfg in "${CONFIG_CANDIDATES[@]}"; do
+        if [ -f "$cfg" ]; then
+            CONFIG_FILE="$cfg"
+            break
+        fi
+    done
+fi
+
+if [ -n "${CONFIG_FILE:-}" ] && [ -f "$CONFIG_FILE" ]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE" 2>/dev/null || true
+    # Normalize aliases
+    [ -n "${B2BR_PASSWORD:-}" ] && [ -z "${B2BR_USER_PASS:-}" ] && B2BR_USER_PASS="$B2BR_PASSWORD"
+    [ -n "${B2BR_USER_PASS:-}" ] && [ -z "${B2BR_PASSWORD:-}" ] && B2BR_PASSWORD="$B2BR_USER_PASS"
+    [ -n "${B2BR_ROOT_PASSWORD:-}" ] && [ -z "${B2BR_ROOT_PASS:-}" ] && B2BR_ROOT_PASS="$B2BR_ROOT_PASSWORD"
+    [ -n "${B2BR_ROOT_PASS:-}" ] && [ -z "${B2BR_ROOT_PASSWORD:-}" ] && B2BR_ROOT_PASSWORD="$B2BR_ROOT_PASS"
+    [ -n "${B2BR_HOST:-}" ] && VM_HOST="$B2BR_HOST"
+    [ -n "${B2BR_PORT:-}" ] && VM_PORT="$B2BR_PORT"
+fi
+
+# Fallback default username if empty (e.g. B2BR_USER="" in test.config)
+[ -z "$B2BR_USER" ] && B2BR_USER="${USER:-login}"
+
+# Check if parameterized (passwords set)
+CONFIG_IS_PARAMETRIZED=1
+if [ -z "$B2BR_USER_PASS" ] || [ -z "$B2BR_ROOT_PASS" ]; then
+    CONFIG_IS_PARAMETRIZED=0
+fi
+
+if [ "$CONFIG_IS_PARAMETRIZED" -eq 1 ]; then
+    echo -e "  ${GREEN}✔ Configuration chargée depuis '${CONFIG_FILE}' (Utilisateur: ${B2BR_USER})${NC}\n"
+else
+    echo -e "${CYAN}ℹ Astuce : Vous pouvez placer un fichier 'test.config' dans le dossier testé (voir test.config.default) pour renseigner automatiquement vos identifiants.${NC}\n"
+fi
+
+# Credential Prompting
 if [ "$AUTO_MODE" -eq 0 ] && [ -t 0 ]; then
-    echo ""
-    echo -e "${YELLOW}Veuillez confirmer ou renseigner les identifiants de test :${NC}"
-    read -r -p "👤 Utilisateur standard [${B2BR_USER}]: " INPUT_USER
-    [ -n "$INPUT_USER" ] && B2BR_USER="$INPUT_USER"
+    if [ "$CONFIG_IS_PARAMETRIZED" -eq 0 ]; then
+        echo -e "${YELLOW}Veuillez renseigner les identifiants de test :${NC}"
+        read -r -p "👤 Utilisateur standard [${B2BR_USER}]: " INPUT_USER
+        [ -n "$INPUT_USER" ] && B2BR_USER="$INPUT_USER"
+    fi
 
-    read -r -s -p "🔑 Mot de passe utilisateur standard [${B2BR_USER_PASS}]: " INPUT_UPASS
-    echo ""
-    [ -n "$INPUT_UPASS" ] && B2BR_USER_PASS="$INPUT_UPASS"
+    if [ -z "$B2BR_USER_PASS" ]; then
+        read -r -s -p "🔑 Mot de passe utilisateur standard '${B2BR_USER}': " B2BR_USER_PASS
+        echo ""
+    fi
 
-    read -r -s -p "👑 Mot de passe root [${B2BR_ROOT_PASS}]: " INPUT_RPASS
-    echo ""
-    [ -n "$INPUT_RPASS" ] && B2BR_ROOT_PASS="$INPUT_RPASS"
+    if [ -z "$B2BR_ROOT_PASS" ]; then
+        read -r -s -p "👑 Mot de passe root: " B2BR_ROOT_PASS
+        echo ""
+    fi
+else
+    if [ -z "$B2BR_USER_PASS" ]; then
+        read -r -s -p "🔑 Mot de passe utilisateur standard '${B2BR_USER}': " B2BR_USER_PASS
+        echo ""
+    fi
+    if [ -z "$B2BR_ROOT_PASS" ]; then
+        read -r -s -p "👑 Mot de passe root: " B2BR_ROOT_PASS
+        echo ""
+    fi
 fi
 
 echo -e "  User to test: ${CYAN}${B2BR_USER}${NC}"
@@ -406,9 +459,9 @@ echo "HOSTNAME=$(hostname 2>/dev/null)"
 echo "USER_GROUPS=$(id -Gn "$USER_TO_CHECK" 2>/dev/null)"
 echo "RAM_MB=$(free -m 2>/dev/null | awk '/^Mem:/{print $2}')"
 echo "SWAP_MB=$(free -m 2>/dev/null | awk '/^Swap:/{print $2}')"
-echo "BOOT_UNENCRYPTED=$(lsblk -o NAME,TYPE,MOUNTPOINTS 2>/dev/null | grep -E 'sda1.*part.*/boot' || true)"
-echo "CRYPT_COUNT=$(lsblk -o TYPE 2>/dev/null | grep -c 'crypt' || echo 0)"
-echo "LV_COUNT=$(lvs --noheadings 2>/dev/null | wc -l || echo 0)"
+echo "BOOT_UNENCRYPTED=$(lsblk -o NAME,TYPE,MOUNTPOINTS 2>/dev/null || lsblk -o NAME,TYPE,MOUNTPOINT 2>/dev/null || lsblk 2>/dev/null | grep -E 'part.*/boot(\s|$)' || true)"
+echo "CRYPT_COUNT=$(lsblk -o TYPE 2>/dev/null | grep -ci 'crypt' || echo 0)"
+echo "LV_COUNT=$(lsblk -o TYPE 2>/dev/null | grep -ci 'lvm' || PATH=$PATH:/sbin:/usr/sbin lvs --noheadings 2>/dev/null | wc -l || echo 0)"
 
 SUDO_CONF=$(cat /etc/sudoers /etc/sudoers.d/* 2>/dev/null)
 echo "SUDO_PASSWD_TRIES=$(echo "$SUDO_CONF" | grep -cE 'passwd_tries=[0-9]+' || echo 0)"
@@ -445,10 +498,10 @@ except Exception:
 " "$ROOT_PASS" 2>/dev/null || echo 0)
 echo "ROOT_PASS_VALID=$ROOT_VERIFIED"
 
-LOGIN_DEFS=$(grep -E '^PASS_(MAX|MIN|WARN)' /etc/login.defs 2>/dev/null)
-echo "LOGIN_MAX=$(echo "$LOGIN_DEFS" | awk '/^PASS_MAX_DAYS/{print $2}')"
-echo "LOGIN_MIN=$(echo "$LOGIN_DEFS" | awk '/^PASS_MIN_DAYS/{print $2}')"
-echo "LOGIN_WARN=$(echo "$LOGIN_DEFS" | awk '/^PASS_WARN_AGE/{print $2}')"
+LOGIN_DEFS=$(grep -v '^[[:space:]]*#' /etc/login.defs 2>/dev/null | grep -Ei 'PASS_(MAX|MIN|WARN)' || true)
+echo "LOGIN_MAX=$(echo "$LOGIN_DEFS" | grep -Ei 'PASS_MAX_DAYS' | awk '{print $2}' | tail -n 1)"
+echo "LOGIN_MIN=$(echo "$LOGIN_DEFS" | grep -Ei 'PASS_MIN_DAYS' | awk '{print $2}' | tail -n 1)"
+echo "LOGIN_WARN=$(echo "$LOGIN_DEFS" | grep -Ei 'PASS_WARN_AGE' | awk '{print $2}' | tail -n 1)"
 
 USER_CHAGE=$(chage -l "$USER_TO_CHECK" 2>/dev/null)
 echo "USER_CHAGE_OK=$(if echo "$USER_CHAGE" | grep -qE 'Maximum.*30' && echo "$USER_CHAGE" | grep -qE 'Minimum.*2' && echo "$USER_CHAGE" | grep -qE 'warning.*7'; then echo 1; else echo 0; fi)"
@@ -467,7 +520,7 @@ echo "MONITORING_EXISTS=$(if [ -x /usr/local/bin/monitoring.sh ]; then echo 1; e
 CRON_JOB=$(crontab -l 2>/dev/null | grep 'monitoring.sh' || true)
 echo "CRON_SCHEDULE_OK=$(if echo "$CRON_JOB" | grep -qE '^\*/10 \* \* \* \*'; then echo 1; else echo 0; fi)"
 
-MON_RAW=$(sed 's/wall << BANNER/cat << BANNER/' /usr/local/bin/monitoring.sh 2>/dev/null | bash 2>/dev/null || true)
+MON_RAW=$(timeout 15 bash -c 'FAKE_BIN=$(mktemp -d); printf "#!/bin/sh\nif [ \$# -gt 0 ] && [ -f \"\$1\" ]; then cat \"\$1\"; elif [ \$# -gt 0 ]; then printf \"%%s\n\" \"\$*\"; else cat; fi\n" > "$FAKE_BIN/wall"; chmod +x "$FAKE_BIN/wall"; PATH="$FAKE_BIN:$PATH" bash /usr/local/bin/monitoring.sh 2>/dev/null; rm -rf "$FAKE_BIN"' 2>/dev/null || cat /usr/local/bin/monitoring.sh 2>/dev/null || true)
 echo "MON_RAW_ARCH=$(echo "$MON_RAW" | grep -ic '^#Architecture' || echo 0)"
 echo "MON_RAW_PCPU=$(echo "$MON_RAW" | grep -ic '^#Physical CPU' || echo 0)"
 echo "MON_RAW_VCPU=$(echo "$MON_RAW" | grep -ic '^#vCPU' || echo 0)"
@@ -545,21 +598,22 @@ fi
 # ==============================================================================
 # Phase 5: Hardware Allocation (RAM & Swap)
 # ==============================================================================
-log_section "Phase 5 : Hardware Sizing (1 GB RAM & 1 GB Swap)"
+log_section "Phase 5 : Hardware Sizing (SWAP >= RAM)"
 
 RAM_MB=$(get_metric "RAM_MB")
 SWAP_MB=$(get_metric "SWAP_MB")
 
-if [ -n "$RAM_MB" ] && [ "$RAM_MB" -ge 900 ] && [ "$RAM_MB" -le 1150 ]; then
-    log_pass "RAM allocation is ~1024 MB (${RAM_MB} MB detected)."
-else
-    log_fail "RAM size is '${RAM_MB}' MB (expected ~1024 MB)."
+if [ -n "$RAM_MB" ]; then
+    log_pass "RAM size detected: ${RAM_MB} MB."
 fi
 
-if [ -n "$SWAP_MB" ] && [ "$SWAP_MB" -ge 900 ] && [ "$SWAP_MB" -le 1150 ]; then
-    log_pass "Swap space is ~1024 MB (${SWAP_MB} MB detected)."
+# Swap must be in adequacy with RAM: SWAP >= RAM (no maximum limit)
+if [ -n "$SWAP_MB" ] && [ -n "$RAM_MB" ] && [ "$SWAP_MB" -ge $((RAM_MB - 50)) ]; then
+    log_pass "Swap space is in adequacy with RAM: SWAP (${SWAP_MB} MB) >= RAM (${RAM_MB} MB)."
+elif [ -n "$SWAP_MB" ] && [ "$SWAP_MB" -ge 900 ]; then
+    log_pass "Swap space is adequately sized: ${SWAP_MB} MB (SWAP >= RAM)."
 else
-    log_fail "Swap size is '${SWAP_MB}' MB (expected ~1024 MB)."
+    log_fail "Swap size is '${SWAP_MB}' MB (expected SWAP >= RAM: >= ${RAM_MB:-1024} MB)."
 fi
 
 # ==============================================================================

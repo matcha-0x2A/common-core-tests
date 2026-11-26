@@ -16,6 +16,7 @@ core.*
 *~
 *.swp
 *.swo
+test.config
 .DS_Store
 .vscode/
 .idea/

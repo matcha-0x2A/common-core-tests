@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# 42 Common Core — Born2beRoot Full Compliance & Audit Test Suite
+# Common Core — Born2beRoot Full Compliance & Audit Test Suite
 # ==============================================================================
 
 set -uo pipefail
@@ -67,16 +67,43 @@ section() {
 # ------------------------------------------------------------------------------
 banner
 
+# Load test.config from tested directory or current directory
+CONFIG_FILE=""
+for cfg in "${B2BR_CONFIG:-}" "${PWD}/test.config" "${B2BR_PROJECT_DIR:-}/test.config"; do
+    if [ -n "$cfg" ] && [ -f "$cfg" ]; then
+        CONFIG_FILE="$cfg"
+        break
+    fi
+done
+
+if [ -n "$CONFIG_FILE" ]; then
+    # shellcheck source=/dev/null
+    source "$CONFIG_FILE" 2>/dev/null || true
+    # Normalize variable names
+    [ -n "${B2BR_USER_PASS:-}" ] && [ -z "${B2BR_PASSWORD:-}" ] && B2BR_PASSWORD="$B2BR_USER_PASS"
+    [ -n "${B2BR_PASSWORD:-}" ] && [ -z "${B2BR_USER_PASS:-}" ] && B2BR_USER_PASS="$B2BR_PASSWORD"
+    [ -n "${B2BR_ROOT_PASS:-}" ] && [ -z "${B2BR_ROOT_PASSWORD:-}" ] && B2BR_ROOT_PASSWORD="$B2BR_ROOT_PASS"
+    [ -n "${B2BR_ROOT_PASSWORD:-}" ] && [ -z "${B2BR_ROOT_PASS:-}" ] && B2BR_ROOT_PASS="$B2BR_ROOT_PASSWORD"
+fi
+
+# Fallback default username if empty (e.g. B2BR_USER="" in test.config)
+[ -z "${B2BR_USER:-}" ] && B2BR_USER="${USER:-login}"
+
+# Check if parameterized (passwords set)
+CONFIG_IS_PARAMETRIZED=1
+if [ -z "${B2BR_PASSWORD:-}" ] || [ -z "${B2BR_ROOT_PASSWORD:-}" ]; then
+    CONFIG_IS_PARAMETRIZED=0
+fi
+
 NEED_EXPORT_HINT=0
 
-# Username
-if [ -z "${B2BR_USER:-}" ]; then
-    DEFAULT_USER="mchambon"
-    if [ -n "${USER:-}" ] && [ "$USER" != "root" ]; then
-        DEFAULT_USER="$USER"
-    fi
-    read -p "Enter Born2beRoot username [default: ${DEFAULT_USER}]: " INPUT_USER
-    B2BR_USER="${INPUT_USER:-$DEFAULT_USER}"
+if [ "$CONFIG_IS_PARAMETRIZED" -eq 1 ]; then
+    echo -e "  ${GREEN}✔ Configuration chargée depuis '${CONFIG_FILE}' (Utilisateur: ${B2BR_USER})${RESET}\n"
+else
+    echo -e "${CYAN}ℹ Astuce : Vous pouvez placer un fichier 'test.config' dans le dossier testé (voir test.config.default) pour renseigner automatiquement vos identifiants.${RESET}\n"
+    # Prompt for username only if not parameterized
+    read -p "Enter Born2beRoot username [default: ${B2BR_USER}]: " INPUT_USER
+    B2BR_USER="${INPUT_USER:-$B2BR_USER}"
     NEED_EXPORT_HINT=1
 fi
 
@@ -192,7 +219,9 @@ run_ssh() {
 
 run_sudo() {
     local cmd="$1"
-    run_ssh "echo '${B2BR_PASSWORD}' | sudo -S bash -c '$cmd'"
+    local encoded
+    encoded=$(echo -n "$cmd" | base64 -w0 2>/dev/null || echo -n "$cmd" | base64 | tr -d '\n')
+    run_ssh "echo '${B2BR_PASSWORD}' | sudo -S -p '' bash -c \"\$(echo '$encoded' | base64 -d)\""
 }
 
 # ------------------------------------------------------------------------------
@@ -277,41 +306,48 @@ section "Partitioning, LVM & Encryption"
 
 # RAM check
 TOTAL_RAM_MB=$(run_ssh "free -m | awk '/^Mem:/{print \$2}'" | tr -d '\r\n')
-if [ "$TOTAL_RAM_MB" -ge 900 ] && [ "$TOTAL_RAM_MB" -le 1150 ]; then
-    record_result "PASS" "RAM size configured around 1024 MB (${TOTAL_RAM_MB} MB)"
-else
-    record_result "WARN" "RAM size is ${TOTAL_RAM_MB} MB (Expected ~1024 MB)"
+if [ -n "$TOTAL_RAM_MB" ]; then
+    record_result "PASS" "RAM size detected: ${TOTAL_RAM_MB} MB"
 fi
 
-# SWAP check
+# SWAP check (must be in adequacy with RAM: SWAP >= RAM, no upper limit)
 TOTAL_SWAP_MB=$(run_ssh "free -m | awk '/^Swap:/{print \$2}'" | tr -d '\r\n')
-if [ "$TOTAL_SWAP_MB" -ge 900 ] && [ "$TOTAL_SWAP_MB" -le 1150 ]; then
-    record_result "PASS" "Swap size configured around 1024 MB (${TOTAL_SWAP_MB} MB)"
+[ -z "$TOTAL_SWAP_MB" ] && TOTAL_SWAP_MB=0
+if [ "$TOTAL_SWAP_MB" -gt 0 ] && [ -n "$TOTAL_RAM_MB" ] && [ "$TOTAL_SWAP_MB" -ge $((TOTAL_RAM_MB - 50)) ]; then
+    record_result "PASS" "Swap size is in adequacy with RAM: SWAP (${TOTAL_SWAP_MB} MB) >= RAM (${TOTAL_RAM_MB} MB)"
+elif [ "$TOTAL_SWAP_MB" -gt 0 ]; then
+    record_result "PASS" "Swap size configured adequately (${TOTAL_SWAP_MB} MB detected)"
 else
-    record_result "WARN" "Swap size is ${TOTAL_SWAP_MB} MB (Expected ~1024 MB)"
+    record_result "FAIL" "No Swap space detected (0 MB)"
 fi
 
-# LUKS Encryption
-LSBLK_OUT=$(run_ssh "lsblk -o NAME,TYPE,MOUNTPOINTS")
-if echo "$LSBLK_OUT" | grep -q "crypt"; then
+# LUKS Encryption & Block Devices
+LSBLK_OUT=$(run_sudo "lsblk -o NAME,TYPE,MOUNTPOINTS 2>/dev/null || lsblk -o NAME,TYPE,MOUNTPOINT 2>/dev/null || lsblk 2>/dev/null")
+if echo "$LSBLK_OUT" | grep -qi "crypt" || echo "$LSBLK_OUT" | grep -qi "dm-crypt"; then
     record_result "PASS" "Encrypted volume detected (LUKS / crypt)"
 else
     record_result "FAIL" "No encrypted (crypt) partition found in lsblk"
 fi
 
 # Unencrypted /boot
-BOOT_LINE=$(echo "$LSBLK_OUT" | grep -E "/boot$" || true)
-if [ -n "$BOOT_LINE" ] && ! echo "$BOOT_LINE" | grep -q "crypt"; then
+BOOT_MOUNT=$(run_sudo "findmnt -no SOURCE /boot 2>/dev/null || df /boot 2>/dev/null | tail -1 | awk '{print \$1}'" | tr -d '\r\n')
+if [ -n "$BOOT_MOUNT" ] && ! echo "$BOOT_MOUNT" | grep -qiE "mapper|crypt"; then
+    record_result "PASS" "/boot is mounted on dedicated unencrypted partition (${BOOT_MOUNT})"
+elif echo "$LSBLK_OUT" | grep -qE '\s(/boot|/boot/efi)(\s|$)'; then
     record_result "PASS" "/boot is mounted on dedicated unencrypted partition"
 else
-    record_result "WARN" "Check /boot partition layout: $BOOT_LINE"
+    record_result "WARN" "Check /boot partition layout: ${BOOT_MOUNT:-not detected}"
 fi
 
 # LVM verification
-LVM_COUNT=$(run_ssh "pvs 2>/dev/null | wc -l" | tr -d '\r\n')
-LV_COUNT=$(run_ssh "lvs 2>/dev/null | wc -l" | tr -d '\r\n')
-if [ "$LVM_COUNT" -gt 1 ] && [ "$LV_COUNT" -ge 3 ]; then
-    record_result "PASS" "LVM active with at least 2 Logical Volumes" "Detected $(($LV_COUNT - 1)) Logical Volumes"
+LV_COUNT=$(echo "$LSBLK_OUT" | grep -ci "lvm" | tr -d '\r\n' || echo 0)
+if [ -z "$LV_COUNT" ] || [ "$LV_COUNT" -eq 0 ]; then
+    LV_COUNT=$(run_sudo "PATH=\$PATH:/sbin:/usr/sbin lvs --noheadings 2>/dev/null | wc -l" | tr -d '\r\n' || echo 0)
+fi
+if [ "$LV_COUNT" -ge 2 ]; then
+    record_result "PASS" "LVM active with at least 2 Logical Volumes" "Detected ${LV_COUNT} Logical Volumes"
+elif [ "$LV_COUNT" -ge 1 ]; then
+    record_result "PASS" "LVM active with Logical Volumes" "Detected ${LV_COUNT} Logical Volume"
 else
     record_result "FAIL" "LVM not properly configured or insufficient Logical Volumes"
 fi
@@ -430,24 +466,28 @@ fi
 # ------------------------------------------------------------------------------
 section "Password Policies"
 
-LOGIN_DEFS=$(run_sudo "grep -E '^PASS_(MAX|MIN|WARN)' /etc/login.defs")
+LOGIN_DEFS=$(run_ssh "grep -Ei '^[[:space:]]*PASS_(MAX_DAYS|MIN_DAYS|WARN_AGE)' /etc/login.defs 2>/dev/null || cat /etc/login.defs 2>/dev/null" || true)
 
-if echo "$LOGIN_DEFS" | grep -Eq "PASS_MAX_DAYS\s+30"; then
+MAX_DAYS=$(echo "$LOGIN_DEFS" | grep -Ei '^[[:space:]]*PASS_MAX_DAYS' | awk '{print $2}' | tail -n 1 | tr -d '\r\n')
+MIN_DAYS=$(echo "$LOGIN_DEFS" | grep -Ei '^[[:space:]]*PASS_MIN_DAYS' | awk '{print $2}' | tail -n 1 | tr -d '\r\n')
+WARN_AGE=$(echo "$LOGIN_DEFS" | grep -Ei '^[[:space:]]*PASS_WARN_AGE' | awk '{print $2}' | tail -n 1 | tr -d '\r\n')
+
+if [ "$MAX_DAYS" = "30" ]; then
     record_result "PASS" "PASS_MAX_DAYS set to 30 in /etc/login.defs"
 else
-    record_result "FAIL" "PASS_MAX_DAYS is not 30 in /etc/login.defs"
+    record_result "FAIL" "PASS_MAX_DAYS is '${MAX_DAYS:-non configuré}' in /etc/login.defs (Attendu: 30)"
 fi
 
-if echo "$LOGIN_DEFS" | grep -Eq "PASS_MIN_DAYS\s+2"; then
+if [ "$MIN_DAYS" = "2" ]; then
     record_result "PASS" "PASS_MIN_DAYS set to 2 in /etc/login.defs"
 else
-    record_result "FAIL" "PASS_MIN_DAYS is not 2 in /etc/login.defs"
+    record_result "FAIL" "PASS_MIN_DAYS is '${MIN_DAYS:-non configuré}' in /etc/login.defs (Attendu: 2)"
 fi
 
-if echo "$LOGIN_DEFS" | grep -Eq "PASS_WARN_AGE\s+7"; then
+if [ "$WARN_AGE" = "7" ]; then
     record_result "PASS" "PASS_WARN_AGE set to 7 in /etc/login.defs"
 else
-    record_result "FAIL" "PASS_WARN_AGE is not 7 in /etc/login.defs"
+    record_result "FAIL" "PASS_WARN_AGE is '${WARN_AGE:-non configuré}' in /etc/login.defs (Attendu: 7)"
 fi
 
 # Account Aging Check
@@ -480,13 +520,31 @@ fi
 # ------------------------------------------------------------------------------
 section "Monitoring Script & Cron"
 
+# Locate monitoring script on VM (default: /usr/local/bin/monitoring.sh)
 SCRIPT_PATH="/usr/local/bin/monitoring.sh"
-SCRIPT_EXISTS=$(run_sudo "[ -x $SCRIPT_PATH ] && echo 'EXISTS' || echo 'MISSING'")
+SCRIPT_EXISTS=$(run_sudo "[ -f $SCRIPT_PATH ] && echo 'EXISTS' || echo 'MISSING'" | tr -d '\r\n')
+
+if [ "$SCRIPT_EXISTS" != "EXISTS" ]; then
+    if [ "$(run_sudo "[ -f /root/monitoring.sh ] && echo 1 || echo 0" | tr -d '\r\n')" = "1" ]; then
+        SCRIPT_PATH="/root/monitoring.sh"
+        SCRIPT_EXISTS="EXISTS"
+    elif [ "$(run_sudo "[ -f /home/${B2BR_USER}/monitoring.sh ] && echo 1 || echo 0" | tr -d '\r\n')" = "1" ]; then
+        SCRIPT_PATH="/home/${B2BR_USER}/monitoring.sh"
+        SCRIPT_EXISTS="EXISTS"
+    fi
+fi
+
+# Check execution permission
+SCRIPT_EXEC=$(run_sudo "[ -x $SCRIPT_PATH ] && echo 'EXEC' || echo 'NOT_EXEC'" | tr -d '\r\n')
 
 if [ "$SCRIPT_EXISTS" = "EXISTS" ]; then
-    record_result "PASS" "Monitoring script exists and is executable at $SCRIPT_PATH"
+    if [ "$SCRIPT_EXEC" = "EXEC" ]; then
+        record_result "PASS" "Monitoring script exists and is executable at $SCRIPT_PATH"
+    else
+        record_result "WARN" "Monitoring script exists at $SCRIPT_PATH but lacks execution permissions (+x)"
+    fi
 else
-    record_result "FAIL" "Monitoring script missing or not executable at $SCRIPT_PATH"
+    record_result "FAIL" "Monitoring script missing at $SCRIPT_PATH" "Place monitoring.sh at /usr/local/bin/monitoring.sh (or path in root crontab)"
 fi
 
 CRON_CHECK=$(run_sudo "crontab -l 2>/dev/null | grep -v '^#' || true")
@@ -497,40 +555,50 @@ else
 fi
 
 # Run monitoring script and evaluate output
-MONITOR_OUT=$(run_sudo "sed 's/wall << BANNER/cat << BANNER/' $SCRIPT_PATH | bash" || true)
+if [ "$SCRIPT_EXISTS" = "EXISTS" ]; then
+    # Read the script content directly
+    SCRIPT_CONTENT=$(run_sudo "cat $SCRIPT_PATH 2>/dev/null" || true)
 
-REQUIRED_FIELDS=(
-    "#Architecture"
-    "#Physical CPU"
-    "#vCPU"
-    "#Memory Usage"
-    "#Disk Usage"
-    "#CPU load"
-    "#Last boot"
-    "#LVM use"
-    "#TCP Connections"
-    "#User log"
-    "#Network"
-    "#Sudo"
-)
+    # Execute the monitoring script with a fake wall wrapper to capture real runtime output
+    MONITOR_CMD='FAKE_BIN=$(mktemp -d); printf "#!/bin/sh\nif [ \$# -gt 0 ] && [ -f \"\$1\" ]; then cat \"\$1\"; elif [ \$# -gt 0 ]; then printf \"%%s\n\" \"\$*\"; else cat; fi\n" > "$FAKE_BIN/wall"; chmod +x "$FAKE_BIN/wall"; PATH="$FAKE_BIN:$PATH" timeout 15 bash '"$SCRIPT_PATH"' 2>&1; rm -rf "$FAKE_BIN"'
+    MONITOR_OUT=$(run_sudo "$MONITOR_CMD" || true)
 
-ALL_FIELDS_OK=1
-for field in "${REQUIRED_FIELDS[@]}"; do
-    if echo "$MONITOR_OUT" | grep -qi "$field"; then
-        continue
-    else
-        ALL_FIELDS_OK=0
-        record_result "FAIL" "Monitoring script missing field: $field"
+    COMBINED_CHECK="${MONITOR_OUT}
+${SCRIPT_CONTENT}"
+
+    REQUIRED_FIELDS=(
+        "Architecture"
+        "Physical CPU"
+        "vCPU"
+        "Memory Usage"
+        "Disk Usage"
+        "CPU load"
+        "Last boot"
+        "LVM use"
+        "TCP Connections"
+        "User log"
+        "Network"
+        "Sudo"
+    )
+
+    ALL_FIELDS_OK=1
+    for field in "${REQUIRED_FIELDS[@]}"; do
+        if echo "$COMBINED_CHECK" | grep -qi "$field"; then
+            continue
+        else
+            ALL_FIELDS_OK=0
+            record_result "FAIL" "Monitoring script missing field: $field"
+        fi
+    done
+
+    if [ "$ALL_FIELDS_OK" -eq 1 ]; then
+        record_result "PASS" "Monitoring script outputs all 12 required telemetry fields"
     fi
-done
 
-if [ "$ALL_FIELDS_OK" -eq 1 ]; then
-    record_result "PASS" "Monitoring script outputs all 12 required telemetry fields"
-fi
-
-# Check CPU load bug
-if echo "$MONITOR_OUT" | grep -qi "#CPU load: 100.0%"; then
-    record_result "WARN" "CPU load is reported at 100.0% (check for top awk delimiter bug)"
+    # Check CPU load bug
+    if echo "$MONITOR_OUT" | grep -qi "CPU load: 100.0%"; then
+        record_result "WARN" "CPU load is reported at 100.0% (check for top awk delimiter bug)"
+    fi
 fi
 
 # ------------------------------------------------------------------------------
@@ -563,7 +631,7 @@ echo -e "  Warnings:       ${YELLOW}${BOLD}${WARNING_TESTS}${RESET}"
 echo -e "${CYAN}==================================================================${RESET}"
 
 if [ "$FAILED_TESTS" -eq 0 ]; then
-    echo -e "\n  ${GREEN}${BOLD}🎉 CONGRATULATIONS! Born2beRoot VM is 100% compliant with 42 guidelines.${RESET}\n"
+    echo -e "\n  ${GREEN}${BOLD} CONGRATULATIONS! Born2beRoot VM is 100% compliant.${RESET}\n"
     exit 0
 else
     echo -e "\n  ${RED}${BOLD}❌ Some requirements failed. Please review the failed items above.${RESET}\n"

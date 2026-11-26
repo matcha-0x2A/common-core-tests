@@ -24,11 +24,7 @@ L'ensemble des tests est structuré par module d'apprentissage du cursus 42 :
 
 - 🐧 [**01-systems-and-networks-administration/README.md**](file:///home/mchambon/wip/42/common-core-tests/01-systems-and-networks-administration/README.md)
   > Audit de conformité complet pour la virtualisation et l'administration système :
-  > - **** : validation SSH, UFW, Sudo strict, PAM pwquality, LVM sur LUKS, monitoring et mapping de port VirtualBox.
-
-- 🐧 [**01-systems-and-networks-administration/README.md**](file:///home/mchambon/wip/42/common-core-tests/01-systems-and-networks-administration/README.md)
-  > Audit de conformité complet pour la virtualisation et l'administration système :
-  > - **`00-born2beroot`** : validation SSH, UFW, Sudo strict, PAM pwquality, LVM sur LUKS, monitoring et mapping de port VirtualBox.
+  > - **`00-born2beroot`** *(Tested for Debian only)* : validation SSH, UFW, Sudo strict, PAM pwquality, LVM sur LUKS, monitoring et mapping de port VirtualBox.
 
 - 🐍 [**02-object-oriented-programming/README.md**](file:///home/mchambon/wip/42/common-core-tests/02-object-oriented-programming/README.md)
   > Suites de validation et tests unitaires pour la filière Python :

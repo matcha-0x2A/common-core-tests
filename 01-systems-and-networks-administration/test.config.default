@@ -1,0 +1,29 @@
+# ==============================================================================
+# 42 Common Core — Born2beRoot Test Configuration (test.config)
+# ==============================================================================
+# Copiez ce fichier sous le nom 'test.config' DANS LE DOSSIER TESTÉ de votre projet
+# afin d'éviter les demandes interactives lors de l'exécution des tests :
+#
+#   cp 01-systems-and-networks-administration/test.config.default /chemin/vers/mon_projet/test.config
+#
+
+# Nom de l'utilisateur standard (ex: votre login 42)
+B2BR_USER=""
+
+# Mot de passe de l'utilisateur standard
+B2BR_USER_PASS=""
+# Alias supporté : B2BR_PASSWORD=""
+
+# Mot de passe du compte root
+B2BR_ROOT_PASS=""
+# Alias supporté : B2BR_ROOT_PASSWORD=""
+
+# Hôte et Port SSH (par défaut 127.0.0.1:4242)
+B2BR_HOST="127.0.0.1"
+B2BR_PORT="4242"
+
+# (Optionnel) Nom de la VM VirtualBox
+# VM_NAME="born2beroot"
+
+# (Optionnel) Chemin vers le disque virtuel .vdi pour vérification SHA1
+# VDI_PATH="/chemin/vers/disque.vdi"
