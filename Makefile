@@ -18,6 +18,7 @@ help:
 	@echo "02-object-oriented-programming (Python suites) :"
 	@echo "  ./02-object-oriented-programming/test-<module>.sh [/path/to/<module>]"
 	@echo "  ./02-object-oriented-programming/test-00-growing-code-main.sh [--auto|--interactive]"
+	@echo "  ./02-object-oriented-programming/test-03-01-data-archivist-main.sh [--auto|--interactive]"
 	@echo "  (Modules : 00-growing-code, 01-code-cultivation, 02-garden-guardian,"
 	@echo "             03-00-data-quest, 03-01-data-archivist, 03-02-nexus,"
 	@echo "             03-03-the-codex, 04-00-datadeck, 04-01-the-matrix,"
@@ -81,6 +82,9 @@ $(PYTHON_MODULES):
 00-growing-code-main:
 	@./$(OOP_DIR)/test-00-growing-code-main.sh
 
+03-01-data-archivist-main:
+	@./$(OOP_DIR)/test-03-01-data-archivist-main.sh
+
 python-tests: $(PYTHON_MODULES)
 
 c-tests: 00-libft 01-00-printf 01-01-getnextline 02-push-swap
@@ -88,4 +92,4 @@ c-tests: 00-libft 01-00-printf 01-01-getnextline 02-push-swap
 .PHONY: all help 00-born2beroot born2beroot sysadmin-tests clean fclean re c-tests python-tests \
         00-libft libft 01-00-printf libftprintf 01-01-getnextline getnextline \
         02-push-swap push_swap push-swap \
-        $(PYTHON_MODULES) 00-growing-code-main
+        $(PYTHON_MODULES) 00-growing-code-main 03-01-data-archivist-main

@@ -28,9 +28,11 @@ L'ensemble des tests est structuré par module d'apprentissage du cursus 42 :
 
 - 🐍 [**02-object-oriented-programming/README.md**](file:///home/mchambon/wip/42/common-core-tests/02-object-oriented-programming/README.md)
   > Suites de validation et tests unitaires pour la filière Python :
+  > - **Projets validés** :
+  >   - **`00-growing-code` (✅ Validé)** : conformité PEP 8 / Flake8, suites `unittest` (`ex0` à `ex7`) et test runner helper interactif.
+  >   - **`03-01-data-archivist` (✅ Validé)** : persistance, manipulation de flux CLI (`sys.stdin`, `sys.stdout`, `sys.stderr`), context managers et **contrôle statique AST strict** (interdiction de `with` avant `ex3`, obligation de `with` en `ex3`, interdiction de `input()` dans `ex2`, restriction aux types/collections autorisés). Fichiers de test 100% isolés sans aucune altération de l'archive livrable testée.
   > - **Conformité Flake8 (PEP 8)** & suites `unittest` / `pytest` sur tous les modules.
-  > - **Contrôle statique AST des contraintes du sujet** : vérification des interdictions strictes (ex: `03-01-data-archivist` interdisant l'instruction `with` avant `ex3` et restreignant les types/collections autorisés).
-  > - Programme de test helper (`main.py`) en mode automatique ou interactif pour `00-growing-code`.
+  > - Programme de test helper (`main.py`) en mode automatique ou interactif pour `00-growing-code` et `03-01-data-archivist`.
 
 ---
 
@@ -54,9 +56,12 @@ common-core-tests/
 │
 └── 02-object-oriented-programming/   # Module Python (OOP)
     ├── README.md                     # Documentation détaillée du module Python
-    ├── test-00-growing-code.sh       # Runner Flake8 + unittest
-    ├── test-00-growing-code-main.sh  # Runner pour le test helper main.py
+    ├── test-00-growing-code.sh       # Runner Flake8 + unittest (00-growing-code)
+    ├── test-00-growing-code-main.sh  # Runner helper interactif main.py
     ├── 00-growing-code/              # test_suite.py & main.py
+    ├── test-03-01-data-archivist.sh  # Runner Flake8 + 23 unittests + AST (03-01-data-archivist)
+    ├── test-03-01-data-archivist-main.sh # Runner helper interactif main.py
+    ├── 03-01-data-archivist/         # test_suite.py, main.py & fixtures de test
     └── ... (01-code-cultivation .. 04-03-funcmage)
 ```
 

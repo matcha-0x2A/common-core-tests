@@ -8,19 +8,31 @@ Ce module regroupe les suites de validation et de tests unitaires pour la filiè
 
 Chaque projet de la filière dispose d'une suite de validation de conformité de style (Flake8) et d'un harnais de tests unitaires :
 
-| Module | Description & Objectifs | Runner associé |
-| :--- | :--- | :--- |
-| **`00-growing-code`** | Fondations Python : types, fonctions, boucles, formatting, structures de base (`ex0` à `ex7`) | `test-00-growing-code.sh` & `test-00-growing-code-main.sh` |
-| **`01-code-cultivation`** | Modularité, packaging, gestion des exceptions et conventions | `test-01-code-cultivation.sh` |
-| **`02-garden-guardian`** | Classes, encapsulation, héritage, polymorphisme | `test-02-garden-guardian.sh` |
-| **`03-00-data-quest`** | Manipulation de données, parsing et structures adaptées | `test-03-00-data-quest.sh` |
-| **`03-01-data-archivist`** | Persistance, sérialisation et flux de données | `test-03-01-data-archivist.sh` |
-| **`03-02-nexus`** | Architecture réseau & communication inter-composants | `test-03-02-nexus.sh` |
-| **`03-03-the-codex`** | Métaprogrammation et réflexivité | `test-03-03-the-codex.sh` |
-| **`04-00-datadeck`** | Structures de données avancées | `test-04-00-datadeck.sh` |
-| **`04-01-the-matrix`** | Calcul matriciel et modélisation orientée objet | `test-04-01-the-matrix.sh` |
-| **`04-02-cosmic-data`** | Traitement & pipelines de données complexes | `test-04-02-cosmic-data.sh` |
-| **`04-03-funcmage`** | Programmation fonctionnelle en Python (closures, générateurs, décorateurs) | `test-04-03-funcmage.sh` |
+| Module | Description & Objectifs | Statut | Runner associé |
+| :--- | :--- | :---: | :--- |
+| **`00-growing-code`** | Fondations Python : types, fonctions, boucles, formatting, structures de base (`ex0` à `ex7`) | ✅ **Validé** | `test-00-growing-code.sh` & `test-00-growing-code-main.sh` |
+| **`01-code-cultivation`** | Modularité, packaging, gestion des exceptions et conventions | ⏳ *En cours* | `test-01-code-cultivation.sh` |
+| **`02-garden-guardian`** | Classes, encapsulation, héritage, polymorphisme | ⏳ *En cours* | `test-02-garden-guardian.sh` |
+| **`03-00-data-quest`** | Manipulation de données, parsing et structures adaptées | ⏳ *En cours* | `test-03-00-data-quest.sh` |
+| **`03-01-data-archivist`** | Persistance, sérialisation et flux de données (`ex0` à `ex3`) — validé sur archive réelle | ✅ **Validé** | `test-03-01-data-archivist.sh` & `test-03-01-data-archivist-main.sh` |
+| **`03-02-nexus`** | Architecture réseau & communication inter-composants | ⏳ *En cours* | `test-03-02-nexus.sh` |
+| **`03-03-the-codex`** | Métaprogrammation et réflexivité | ⏳ *En cours* | `test-03-03-the-codex.sh` |
+| **`04-00-datadeck`** | Structures de données avancées | ⏳ *En cours* | `test-04-00-datadeck.sh` |
+| **`04-01-the-matrix`** | Calcul matriciel et modélisation orientée objet | ⏳ *En cours* | `test-04-01-the-matrix.sh` |
+| **`04-02-cosmic-data`** | Traitement & pipelines de données complexes | ⏳ *En cours* | `test-04-02-cosmic-data.sh` |
+| **`04-03-funcmage`** | Programmation fonctionnelle en Python (closures, générateurs, décorateurs) | ⏳ *En cours* | `test-04-03-funcmage.sh` |
+
+> [!NOTE]
+> ### 🛡️ Validation de `03-01-data-archivist`
+> La suite de tests pour **`03-01-data-archivist`** est **100% validée** en conditions réelles contre une archive livrable (rendu étudiant conforme) :
+> - **Harnais autonome et non-intrusif** : Tous les fichiers de test (`ancient_fragment.txt`, `empty_fragment.txt`) résident exclusivement dans le dossier de test (`02-object-oriented-programming/03-01-data-archivist/`). Aucune modification ni création de fichier (y compris bytecode `__pycache__`) n'est opérée dans le dossier de l'étudiant testé.
+> - **Contrôle statique AST des contraintes du sujet** :
+>   - Interdiction formelle du mot-clé `with` dans `ex0`, `ex1` et `ex2`.
+>   - Obligation d'utiliser le context manager `with` dans `ex3`.
+>   - Interdiction de l'appel à la fonction intégrée `input()` dans `ex2` (usage exclusif des flux `sys.stdin`).
+>   - Restriction stricte aux types et collections standards autorisés (`str`, `int`, `float`, `list`, `dict`, `set`, `tuple`).
+> - **23 Tests unitaires exhaustifs** couvrant la lecture, l'écriture, les flux d'erreurs `[STDERR]`, les valeurs limites et les exceptions.
+> - **Double modalité d'exécution** : suite unitaire batch (`test-03-01-data-archivist.sh`) et test helper visuel interactif/automatique (`main.py`).
 
 ---
 
@@ -34,9 +46,11 @@ Chaque projet de la filière dispose d'une suite de validation de conformité de
    - Analyse syntaxique de l'arbre syntaxique abstrait (AST) pour faire respecter les règles strictes des sujets 42 :
      - **`03-01-data-archivist`** :
        - **Interdiction de `with` avant l'exercice 3** : vérifie par AST (`ast.With`, `ast.AsyncWith`) que ni `ex0`, `ex1`, ni `ex2` n'emploient de context managers prématurément.
+       - **Obligation de `with` dans l'exercice 3** : vérifie la présence du context manager obligatoire pour la gestion des fichiers dans `ex3`.
+       - **Interdiction de `input()` dans l'exercice 2** : contrôle par AST l'absence d'appels à la fonction intégrée `input()` au profit de la lecture sur `sys.stdin`.
        - **Types & collections standards autorisés** : vérifie l'absence d'imports de structures de collections non permises (`collections`, `heapq`, `array`, `queue`, `pandas`, `numpy`...) afin de restreindre l'usage aux seuls types autorisés (`str`, `int`, `float`, `list`, `dict`, `set`, `tuple`).
-4. **Programme Helper Interactif & Automatisé (`main.py`)** :
-   - Spécifiquement pour `00-growing-code`, un helper interactif permet d'exécuter et tester visuellement chaque exercice (`ex0` à `ex7`) ou de dérouler un scénario de test automatisé complet.
+4. **Programmes Helpers Interactifs & Automatisés (`main.py`)** :
+   - Pour `00-growing-code` et `03-01-data-archivist`, des helpers dédiés permettent d'exécuter et tester visuellement chaque exercice (`ex0` à `ex3` / `ex7`) ou de dérouler un scénario de test automatisé complet.
 
 ---
 
@@ -57,19 +71,22 @@ Les scripts détectent automatiquement le dossier cible (selon le dossier couran
 ./02-object-oriented-programming/test-03-01-data-archivist.sh [/chemin/vers/03-01-data-archivist]
 ```
 
-#### Options avancées pour `00-growing-code`
+#### Options avancées pour `00-growing-code` et `03-01-data-archivist`
 ```bash
 # Lancer les tests unitaires ET exécuter le runner main.py :
 ./02-object-oriented-programming/test-00-growing-code.sh --with-main
+./02-object-oriented-programming/test-03-01-data-archivist.sh --with-main
 
 # Lancer directement le test helper main.py en mode automatique :
 ./02-object-oriented-programming/test-00-growing-code-main.sh [/chemin/vers/00-growing-code]
+./02-object-oriented-programming/test-03-01-data-archivist-main.sh [/chemin/vers/03-01-data-archivist]
 
 # Lancer main.py en mode interactif avec menu de sélection :
 ./02-object-oriented-programming/test-00-growing-code-main.sh --interactive
+./02-object-oriented-programming/test-03-01-data-archivist-main.sh --interactive
 
-# Lancer un exercice spécifique (ex: ex4 ou ex7) :
-./02-object-oriented-programming/test-00-growing-code-main.sh 4
+# Lancer un exercice spécifique (ex: ex0 ou ex3) :
+./02-object-oriented-programming/test-03-01-data-archivist-main.sh 3
 ```
 
 ---
@@ -83,8 +100,9 @@ make 00-growing-code
 make 01-code-cultivation
 make 02-garden-guardian
 
-# Lancer le helper interactif de 00-growing-code :
+# Lancer le helper interactif de 00-growing-code ou 03-01-data-archivist :
 make 00-growing-code-main
+make 03-01-data-archivist-main
 
 # Exécuter l'ensemble des suites de tests Python :
 make python-tests
