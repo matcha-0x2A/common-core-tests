@@ -12,6 +12,7 @@
 # include <signal.h>
 # include <unistd.h>
 # include <limits.h>
+# include <sys/mman.h>
 # include "libft.h"
 
 # define GREEN "\033[0;32m"
@@ -22,10 +23,19 @@
 # define RESET "\033[0m"
 
 # define MAX_FAILED_LOG 256
-extern const char *g_failed_names[MAX_FAILED_LOG];
-extern int g_failed_count;
-extern int g_tests_run;
-extern int g_tests_failed;
+
+typedef struct s_shared_state {
+	int		tests_run;
+	int		tests_failed;
+	int		failed_count;
+	char	failed_names[MAX_FAILED_LOG][128];
+} t_shared_state;
+
+extern t_shared_state *g_shm;
+
+# define g_tests_run (g_shm->tests_run)
+# define g_tests_failed (g_shm->tests_failed)
+# define g_failed_count (g_shm->failed_count)
 
 /* Shared list test utilities */
 extern int g_del_count;

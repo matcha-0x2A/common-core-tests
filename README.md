@@ -4,6 +4,11 @@ Plateforme de tests unitaires, audits mémoire et bancs d'essai automatisés pou
 
 Ce dépôt est **autonome** et **non-intrusif** : il s'exécute contre les dépôts sources cibles sans altérer leur code ni imposer d'infrastructure lourde.
 
+> [!IMPORTANT]
+> ### ⚡ Nouveautés Majeures — Résilience aux Crashs & Filtre par Fonction
+> - **Isolation Totale des Crashs** : Tout test qui segfault (par exemple `ft_strlcat(NULL, "Hello", 0)` si `dst == NULL` n'est pas géré) ou boucle indéfiniment est désormais isolé dans un sous-processus dédié avec mémoire partagée POSIX. **Le crash est consigné en échec et le déroulé des tests continue jusqu'au bout sans jamais s'arrêter.**
+> - **Ciblage par Fonction / Groupe** : Vous pouvez exécuter les tests pour une seule fonction (`strlcat`, `ft_strlen`, etc.), plusieurs fonctions ou des groupes entiers (`part1`, `part2`, `bonus`) directement en ligne de commande ou via Make !
+
 ---
 
 ## 📚 Documentation par Module
@@ -68,6 +73,7 @@ make python-tests
 
 # Lancer un projet spécifique (avec cible explicite ou défaut)
 make libft LIBFT_DIR=/chemin/vers/libft
+make libft FUNCTION=strlcat                     # Tester une seule fonction
 make push_swap PUSH_SWAP_DIR=/chemin/vers/push_swap
 make 00-growing-code
 ```
@@ -78,7 +84,11 @@ Chaque script peut être exécuté directement en lui passant (ou non) le chemin
 
 ```bash
 # C - Projets fondamentaux
-./00-programming-fundamentals/test-00-libft.sh [/chemin/vers/libft] [--valgrind]
+./00-programming-fundamentals/test-00-libft.sh [/chemin/vers/libft] [--valgrind] [fonction ...]
+# Exemples libft :
+./00-programming-fundamentals/test-00-libft.sh strlcat               # Fonction unique
+./00-programming-fundamentals/test-00-libft.sh ft_strlcat ft_strlen # Plusieurs fonctions
+./00-programming-fundamentals/test-00-libft.sh bonus                # Groupe (part1, part2, bonus)
 ./00-programming-fundamentals/test-01-00-printf.sh [/chemin/vers/ft_printf] [--valgrind]
 ./00-programming-fundamentals/test-01-01-getnextline.sh [/chemin/vers/get_next_line] [-b BUFFER_SIZE] [--valgrind]
 ./00-programming-fundamentals/test-02-push-swap.sh [/chemin/vers/push_swap] [--valgrind]

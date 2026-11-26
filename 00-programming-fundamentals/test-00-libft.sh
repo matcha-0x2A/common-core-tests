@@ -11,13 +11,33 @@ REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
 TARGET=""
 VALGRIND_FLAG=""
+FUNCTIONS=()
 
-for arg in "$@"; do
-    if [ "$arg" = "--valgrind" ] || [ "$arg" = "-v" ]; then
-        VALGRIND_FLAG="valgrind"
-    else
-        TARGET="$(cd "$arg" 2>/dev/null && pwd || echo "$arg")"
-    fi
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --valgrind|-v)
+            VALGRIND_FLAG="valgrind"
+            shift
+            ;;
+        -f|--func|--function)
+            FUNCTIONS+=("$2")
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: $0 [/chemin/vers/libft] [--valgrind] [function_name ...]"
+            exit 0
+            ;;
+        *)
+            if [ -d "$1" ] && [ -z "$TARGET" ]; then
+                TARGET="$(cd "$1" 2>/dev/null && pwd)"
+            elif [ -z "$TARGET" ] && [[ "$1" == */* ]]; then
+                TARGET="$1"
+            else
+                FUNCTIONS+=("$1")
+            fi
+            shift
+            ;;
+    esac
 done
 
 if [ -z "$TARGET" ]; then
@@ -32,7 +52,7 @@ fi
 
 if [ -z "$TARGET" ] || [ ! -d "$TARGET" ]; then
     echo "❌ Erreur: Répertoire cible introuvable."
-    echo "Usage: $0 [/chemin/vers/libft] [--valgrind]"
+    echo "Usage: $0 [/chemin/vers/libft] [--valgrind] [function_name ...]"
     exit 1
 fi
 
@@ -44,5 +64,10 @@ fi
 
 TESTS_DIR="${SCRIPT_DIR}/00-libft"
 
-echo "=== Running Libft Tests against: $TARGET ==="
-make -C "$TESTS_DIR" LIBFT_DIR="$TARGET" $VALGRIND_FLAG
+if [ ${#FUNCTIONS[@]} -gt 0 ]; then
+    echo "=== Running Libft Tests against: $TARGET (Filter: ${FUNCTIONS[*]}) ==="
+    make -C "$TESTS_DIR" LIBFT_DIR="$TARGET" $VALGRIND_FLAG ARGS="${FUNCTIONS[*]}"
+else
+    echo "=== Running Libft Tests against: $TARGET ==="
+    make -C "$TESTS_DIR" LIBFT_DIR="$TARGET" $VALGRIND_FLAG
+fi

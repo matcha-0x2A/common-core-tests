@@ -1,9 +1,17 @@
 #include "libft_tests.h"
 
-const char *g_failed_names[MAX_FAILED_LOG];
-int g_failed_count = 0;
-int g_tests_run = 0;
-int g_tests_failed = 0;
+static t_shared_state g_fallback_shm;
+t_shared_state *g_shm = &g_fallback_shm;
+
+static void __attribute__((constructor)) init_shared_state(void)
+{
+	void *ptr = mmap(NULL, sizeof(t_shared_state), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (ptr != MAP_FAILED)
+	{
+		g_shm = (t_shared_state *)ptr;
+		memset(g_shm, 0, sizeof(t_shared_state));
+	}
+}
 
 /* Shared list test utilities */
 int g_del_count = 0;
@@ -32,9 +40,15 @@ void order_del(void *content)
 
 void record_failure(const char *test_name)
 {
-	g_tests_failed++;
-	if (g_failed_count < MAX_FAILED_LOG)
-		g_failed_names[g_failed_count++] = test_name;
+	if (!g_shm)
+		return ;
+	g_shm->tests_failed++;
+	if (g_shm->failed_count < MAX_FAILED_LOG)
+	{
+		strncpy(g_shm->failed_names[g_shm->failed_count], test_name, 127);
+		g_shm->failed_names[g_shm->failed_count][127] = '\0';
+		g_shm->failed_count++;
+	}
 }
 
 void check(int condition, const char *test_name)
@@ -247,100 +261,237 @@ void check_malloc_protection(void *(*func)(void), const char *test_name)
 
 static void run_test_module(void (*func)(void), const char *module_name)
 {
-	int before;
-	int diff;
+	pid_t	pid;
+	int		status;
 
-	before = get_active_allocs();
-	func();
-	diff = get_active_allocs() - before;
-	g_tests_run++;
-	if (diff == 0)
-		printf("  [%sOK%s] Memory audit: %s leaves 0 memory leaks\n", GREEN, RESET, module_name);
-	else
+	fflush(stdout);
+	fflush(stderr);
+	pid = fork();
+	if (pid < 0)
 	{
-		g_tests_failed++;
+		g_tests_run++;
 		record_failure(module_name);
-		printf("  [%sFAIL%s] Memory audit: %s leaked %d block(s)\n", RED, RESET, module_name, diff);
+		printf("  [%sFAIL%s] %s (fork failed)\n", RED, RESET, module_name);
+		return ;
+	}
+	if (pid == 0)
+	{
+		alarm(30);
+		int before = get_active_allocs();
+		func();
+		int diff = get_active_allocs() - before;
+		g_tests_run++;
+		if (diff == 0)
+			printf("  [%sOK%s] Memory audit: %s leaves 0 memory leaks\n", GREEN, RESET, module_name);
+		else
+		{
+			record_failure(module_name);
+			printf("  [%sFAIL%s] Memory audit: %s leaked %d block(s)\n", RED, RESET, module_name, diff);
+		}
+		fflush(stdout);
+		_exit(0);
+	}
+	waitpid(pid, &status, 0);
+	if (WIFSIGNALED(status))
+	{
+		int sig = WTERMSIG(status);
+		g_tests_run++;
+		char crash_buf[128];
+		if (sig == SIGALRM)
+			snprintf(crash_buf, sizeof(crash_buf), "%s (timed out / infinite loop)", module_name);
+		else
+			snprintf(crash_buf, sizeof(crash_buf), "%s (crashed with signal %d)", module_name, sig);
+		record_failure(crash_buf);
+		if (sig == SIGALRM)
+			printf("  [%sFAIL%s] %s (timed out after 30s / infinite loop)\n", RED, RESET, module_name);
+		else
+			printf("  [%sFAIL%s] %s (crashed with signal %d)\n", RED, RESET, module_name, sig);
+	}
+	else if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+	{
+		g_tests_run++;
+		char exit_buf[128];
+		snprintf(exit_buf, sizeof(exit_buf), "%s (exited with error code %d)", module_name, WEXITSTATUS(status));
+		record_failure(exit_buf);
+		printf("  [%sFAIL%s] %s (exited with error code %d)\n", RED, RESET, module_name, WEXITSTATUS(status));
 	}
 }
 
-#define RUN_TEST(fn) run_test_module(fn, #fn)
+typedef struct s_test_entry {
+	const char	*name;
+	const char	*alt_name;
+	void		(*func)(void);
+	int			section;
+} t_test_entry;
 
-int main(void)
+static const t_test_entry g_test_entries[] = {
+	/* Section 1: classification, case & mem */
+	{"ft_isalpha", "isalpha", test_isalpha, 1},
+	{"ft_isdigit", "isdigit", test_isdigit, 1},
+	{"ft_isalnum", "isalnum", test_isalnum, 1},
+	{"ft_isascii", "isascii", test_isascii, 1},
+	{"ft_isprint", "isprint", test_isprint, 1},
+	{"ft_toupper", "toupper", test_toupper, 1},
+	{"ft_tolower", "tolower", test_tolower, 1},
+	{"ft_strlen", "strlen", test_strlen, 1},
+	{"ft_memset", "memset", test_memset, 1},
+	{"ft_bzero", "bzero", test_bzero, 1},
+	{"ft_memcpy", "memcpy", test_memcpy, 1},
+	{"ft_memmove", "memmove", test_memmove, 1},
+	{"ft_memchr", "memchr", test_memchr, 1},
+	{"ft_calloc", "calloc", test_calloc, 1},
+	{"ft_strdup", "strdup", test_strdup, 1},
+	{"ft_strchr", "strchr", test_strchr, 1},
+	{"ft_strrchr", "strrchr", test_strrchr, 1},
+	{"ft_strlcpy", "strlcpy", test_strlcpy, 1},
+	{"ft_strlcat", "strlcat", test_strlcat, 1},
+	{"ft_strncmp", "strncmp", test_strncmp, 1},
+	{"ft_memcmp", "memcmp", test_memcmp, 1},
+	{"ft_strnstr", "strnstr", test_strnstr, 1},
+	{"ft_atoi", "atoi", test_atoi, 1},
+
+	/* Section 3: Part 3 - Linked Lists */
+	{"ft_lstnew", "lstnew", test_lstnew, 3},
+	{"ft_lstadd_front", "lstadd_front", test_lstadd_front, 3},
+	{"ft_lstsize", "lstsize", test_lstsize, 3},
+	{"ft_lstlast", "lstlast", test_lstlast, 3},
+	{"ft_lstadd_back", "lstadd_back", test_lstadd_back, 3},
+	{"ft_lstdelone", "lstdelone", test_lstdelone, 3},
+	{"ft_lstclear", "lstclear", test_lstclear, 3},
+	{"ft_lstiter", "lstiter", test_lstiter, 3},
+	{"ft_lstmap", "lstmap", test_lstmap, 3},
+	{"ft_lst_lifecycle", "lst_lifecycle", test_lst_lifecycle, 3},
+
+	/* Section 2: Part 2 - Additional Functions */
+	{"ft_substr", "substr", test_substr, 2},
+	{"ft_split", "split", test_split, 2},
+	{"ft_strjoin", "strjoin", test_strjoin, 2},
+	{"ft_strtrim", "strtrim", test_strtrim, 2},
+	{"ft_itoa", "itoa", test_itoa, 2},
+	{"ft_strmapi", "strmapi", test_strmapi, 2},
+	{"ft_striteri", "striteri", test_striteri, 2},
+	{"ft_putnbr_fd", "putnbr_fd", test_putnbr_fd, 2}
+};
+
+static int match_filter(const t_test_entry *entry, const char *filter)
 {
-	printf("=========================================\n");
-	printf("   LIBFT TESTS: classification, case & mem\n");
-	printf("=========================================\n");
+	if (strcasecmp(filter, "all") == 0)
+		return (1);
+	if (strcasecmp(filter, "part1") == 0 || strcasecmp(filter, "mandatory") == 0)
+		return (entry->section == 1 || entry->section == 2);
+	if (strcasecmp(filter, "part2") == 0 || strcasecmp(filter, "additional") == 0)
+		return (entry->section == 2);
+	if (strcasecmp(filter, "part3") == 0 || strcasecmp(filter, "bonus") == 0 || strcasecmp(filter, "list") == 0 || strcasecmp(filter, "lists") == 0)
+		return (entry->section == 3);
+	if (strcasecmp(filter, entry->name) == 0 || strcasecmp(filter, entry->alt_name) == 0)
+		return (1);
+	if (strncasecmp(filter, "test_", 5) == 0)
+	{
+		const char *sub = filter + 5;
+		if (strcasecmp(sub, entry->name) == 0 || strcasecmp(sub, entry->alt_name) == 0)
+			return (1);
+	}
+	return (0);
+}
 
-	RUN_TEST(test_isalpha);
-	RUN_TEST(test_isdigit);
-	RUN_TEST(test_isalnum);
-	RUN_TEST(test_isascii);
-	RUN_TEST(test_isprint);
-	RUN_TEST(test_toupper);
-	RUN_TEST(test_tolower);
-	RUN_TEST(test_strlen);
-	RUN_TEST(test_memset);
-	RUN_TEST(test_bzero);
-	RUN_TEST(test_memcpy);
-	RUN_TEST(test_memmove);
-	RUN_TEST(test_memchr);
-	RUN_TEST(test_calloc);
-	RUN_TEST(test_strdup);
-	RUN_TEST(test_strchr);
-	RUN_TEST(test_strrchr);
-	RUN_TEST(test_strlcpy);
-	RUN_TEST(test_strlcat);
-	RUN_TEST(test_strncmp);
-	RUN_TEST(test_memcmp);
-	RUN_TEST(test_strnstr);
-	RUN_TEST(test_atoi);
+int main(int argc, char **argv)
+{
+	int num_entries = sizeof(g_test_entries) / sizeof(g_test_entries[0]);
+	int to_run[num_entries];
+	int run_all = (argc <= 1);
+
+	for (int i = 0; i < num_entries; i++)
+		to_run[i] = run_all ? 1 : 0;
+
+	if (!run_all)
+	{
+		for (int a = 1; a < argc; a++)
+		{
+			if (strcmp(argv[a], "--help") == 0 || strcmp(argv[a], "-h") == 0)
+			{
+				printf("Usage: %s [function_name ...] [part1|part2|part3|bonus|all]\n", argv[0]);
+				printf("Examples:\n");
+				printf("  %s ft_strlcat\n", argv[0]);
+				printf("  %s strlcat strlen atoi\n", argv[0]);
+				printf("  %s bonus\n", argv[0]);
+				return (0);
+			}
+
+			int matched_arg = 0;
+			for (int i = 0; i < num_entries; i++)
+			{
+				if (match_filter(&g_test_entries[i], argv[a]))
+				{
+					to_run[i] = 1;
+					matched_arg = 1;
+				}
+			}
+			if (!matched_arg)
+			{
+				printf("%sError: unknown test or function filter '%s'%s\n", RED, argv[a], RESET);
+				printf("Available functions:\n ");
+				for (int i = 0; i < num_entries; i++)
+					printf(" %s", g_test_entries[i].alt_name);
+				printf("\nGroups: part1, part2, part3 / bonus, all\n");
+				return (1);
+			}
+		}
+	}
+
+
+	int last_section = -1;
+	for (int i = 0; i < num_entries; i++)
+	{
+		if (!to_run[i])
+			continue;
+
+		if (g_test_entries[i].section != last_section)
+		{
+			last_section = g_test_entries[i].section;
+			if (last_section == 1)
+			{
+				printf("=========================================\n");
+				printf("   LIBFT TESTS: classification, case & mem\n");
+				printf("=========================================\n");
+			}
+			else if (last_section == 3)
+			{
+				printf("\n=========================================\n");
+				printf("   LIBFT TESTS: Part 3 - Linked Lists\n");
+				printf("=========================================\n");
+			}
+			else if (last_section == 2)
+			{
+				printf("\n=========================================\n");
+				printf("   LIBFT TESTS: Part 2 - Additional Functions\n");
+				printf("=========================================\n");
+			}
+		}
+		run_test_module(g_test_entries[i].func, g_test_entries[i].name);
+	}
+
+	if (run_all)
+	{
+		printf("\n=========================================\n");
+		printf("   LIBFT TESTS: Global Memory Audit\n");
+		printf("=========================================\n");
+		check(get_active_allocs() == 0, "Global heap audit: 0 memory leaks across all test cases");
+	}
 
 	printf("\n=========================================\n");
-	printf("   LIBFT TESTS: Part 3 - Linked Lists\n");
-	printf("=========================================\n");
-	RUN_TEST(test_lstnew);
-	RUN_TEST(test_lstadd_front);
-	RUN_TEST(test_lstsize);
-	RUN_TEST(test_lstlast);
-	RUN_TEST(test_lstadd_back);
-	RUN_TEST(test_lstdelone);
-	RUN_TEST(test_lstclear);
-	RUN_TEST(test_lstiter);
-	RUN_TEST(test_lstmap);
-	RUN_TEST(test_lst_lifecycle);
-
-	printf("\n=========================================\n");
-	printf("   LIBFT TESTS: Part 2 - Additional Functions\n");
-	printf("=========================================\n");
-	RUN_TEST(test_substr);
-	RUN_TEST(test_split);
-	RUN_TEST(test_strjoin);
-	RUN_TEST(test_strtrim);
-	RUN_TEST(test_itoa);
-	RUN_TEST(test_strmapi);
-	RUN_TEST(test_striteri);
-	RUN_TEST(test_putnbr_fd);
-
-	printf("\n=========================================\n");
-	printf("   LIBFT TESTS: Global Memory Audit\n");
-	printf("=========================================\n");
-	check(get_active_allocs() == 0, "Global heap audit: 0 memory leaks across all test cases");
-
-	printf("\n=========================================\n");
-	if (g_tests_failed == 0)
-		printf("%sALL %d TESTS PASSED SUCCESSFULLY!%s\n", GREEN, g_tests_run, RESET);
+	if (g_shm->tests_failed == 0)
+		printf("%sALL %d TESTS PASSED SUCCESSFULLY!%s\n", GREEN, g_shm->tests_run, RESET);
 	else
 	{
 		int i;
 
-		printf("%s%d / %d TESTS FAILED!%s\n", RED, g_tests_failed, g_tests_run, RESET);
+		printf("%s%d / %d TESTS FAILED!%s\n", RED, g_shm->tests_failed, g_shm->tests_run, RESET);
 		printf("=========================================\n");
-		printf("\n%sFAILED TESTS SUMMARY (%d failure%s):%s\n", RED, g_failed_count, g_failed_count > 1 ? "s" : "", RESET);
-		for (i = 0; i < g_failed_count; i++)
-			printf("  %s✗%s %s\n", RED, RESET, g_failed_names[i]);
+		printf("\n%sFAILED TESTS SUMMARY (%d failure%s):%s\n", RED, g_shm->failed_count, g_shm->failed_count > 1 ? "s" : "", RESET);
+		for (i = 0; i < g_shm->failed_count; i++)
+			printf("  %s✗%s %s\n", RED, RESET, g_shm->failed_names[i]);
 	}
 	printf("=========================================\n");
 
-	return (g_tests_failed != 0);
+	return (g_shm->tests_failed != 0);
 }

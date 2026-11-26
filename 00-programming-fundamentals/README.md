@@ -2,6 +2,15 @@
 
 Ce module regroupe les suites de tests unitaires, audits mémoire et bancs d'essai pour les projets fondamentaux en langage C du Common Core de 42 : **`libft`**, **`ft_printf`**, **`get_next_line`** et **`push_swap`**.
 
+> [!IMPORTANT]
+> ### ⚡ Nouveautés Majeures — Libft Test Runner v2
+> 1. **Résilience Absolue aux Crashs (`SIGSEGV`, `SIGBUS`, Boucles infinies)** :
+>    - Les fonctions testées qui provoquent un crash (par exemple `ft_strlcat(NULL, "Hello", 0)` si `dst == NULL` n'est pas vérifié par l'étudiant) **n'interrompent plus la suite de tests**.
+>    - Chaque module et chaque cas critique est exécuté dans un processus isolé (`fork`) avec mémoire partagée POSIX (`mmap` `MAP_SHARED`). Le crash est comptabilisé et rapporté comme un échec, et **l'ensemble des 900+ tests continue de se dérouler jusqu'à la fin**.
+>    - Un watchdog de 30 secondes interrompt automatiquement toute boucle infinie sans figer le runner.
+> 2. **Ciblage d'une Seule Fonction ou d'un Groupe** :
+>    - Vous pouvez désormais exécuter les tests pour une seule fonction (ex: `strlcat`), une liste de fonctions ou des groupes (`part1`, `part2`, `bonus` / `part3`).
+
 ---
 
 ## 📋 Projets Inclus & Prérequis
@@ -19,7 +28,8 @@ Chaque suite est conçue pour tester de manière autonome et non-intrusive le co
 
 ## 🚀 Fonctionnalités Avancées
 
-- **Isolation par sous-processus (`fork`)** : Les éventuels `SIGSEGV` ou `SIGBUS` sont capturés sans faire échouer l'ensemble du banc de test.
+- **Isolation des crashs par sous-processus (`fork` + mémoire partagée POSIX `mmap`)** : Chaque module et chaque cas limite critique (comme `ft_strlcat(NULL, ...)` ou `ft_bzero(NULL, 0)`) s'exécute dans un sous-processus forké. Même en cas de `SIGSEGV`, `SIGBUS`, ou boucle infinie (watchdog 30s), le parent consigne l'erreur et **continue le déroulement de tous les autres tests jusqu'au bout**.
+- **Filtrage granulaire des fonctions** : Possibilité de tester une seule fonction (ex: `strlcat`), une liste personnalisée (`strlen atoi strlcat`) ou des groupes (`part1`, `part2`, `bonus` / `part3`).
 - **Audit mémoire in-process (`libft_mem_tracker`, `gnl_mem_tracker`)** : Grâce aux drapeaux de linkage `-Wl,--wrap=malloc`, `--wrap=free`, `--wrap=calloc`, chaque allocation est tracée afin de détecter fuites, double-frees et frees invalides.
 - **Injection de fautes mémoire (`malloc failure`)** : Simulation de heap non initialisé (`0xAA`) et simulation d'échecs d'allocation pour tester la robustesse et l'absence de fuites sur retour `NULL`.
 - **Mode `.wip` informatif** : Si le fichier `.wip` est présent à la racine du projet testé, les erreurs ne bloquent pas le build (pratique en phase de développement).
@@ -30,18 +40,31 @@ Chaque suite est conçue pour tester de manière autonome et non-intrusive le co
 
 ### 1. Via les scripts de test
 
-Chaque projet dispose d'un script bash dédié exécutable depuis n'importe où. Par défaut, le script cherche le projet dans les répertoires standards ou le dossier courant. Vous pouvez lui passer explicitement le chemin vers le projet à auditer.
+Chaque projet dispose d'un script bash dédié exécutable depuis n'importe où. Par défaut, le script cherche le projet dans les répertoires standards ou le dossier courant. Vous pouvez lui passer explicitement le chemin vers le projet à auditer ainsi que des noms de fonctions à filtrer.
 
 #### `libft`
 ```bash
-# Tester le répertoire par défaut ou courant :
+# Tester le répertoire par défaut ou courant (tous les tests) :
 ./00-programming-fundamentals/test-00-libft.sh
+
+# Tester une seule fonction (ex: strlcat ou ft_strlcat) :
+./00-programming-fundamentals/test-00-libft.sh strlcat
+./00-programming-fundamentals/test-00-libft.sh ft_strlcat
+
+# Tester plusieurs fonctions spécifiques :
+./00-programming-fundamentals/test-00-libft.sh strlen atoi strlcat
+
+# Tester un groupe de fonctions :
+./00-programming-fundamentals/test-00-libft.sh bonus       # ou part3 (fonctions listes)
+./00-programming-fundamentals/test-00-libft.sh part1       # fonctions partie 1
+./00-programming-fundamentals/test-00-libft.sh part2       # fonctions supplémentaires
 
 # Tester un dossier spécifique (ex: clone d'un pair) :
 ./00-programming-fundamentals/test-00-libft.sh /chemin/vers/libft
+./00-programming-fundamentals/test-00-libft.sh /chemin/vers/libft strlcat
 
 # Activer l'audit Valgrind :
-./00-programming-fundamentals/test-00-libft.sh /chemin/vers/libft --valgrind
+./00-programming-fundamentals/test-00-libft.sh /chemin/vers/libft --valgrind strlcat
 ```
 
 #### `ft_printf`
@@ -83,6 +106,11 @@ make 02-push-swap        # ou make push_swap
 make push_swap PUSH_SWAP_DIR=/chemin/vers/push_swap
 make libft LIBFT_DIR=/chemin/vers/libft
 
+# Cibler une fonction ou un groupe pour libft :
+make libft FUNCTION=strlcat
+make libft FUNCTION="strlen atoi"
+make libft FUNCTION=bonus
+
 # Lancer tous les tests C :
 make c-tests
 ```
@@ -90,6 +118,7 @@ make c-tests
 Depuis le sous-dossier de test :
 ```bash
 cd 00-programming-fundamentals/00-libft && make
+cd 00-programming-fundamentals/00-libft && ./run_tests strlcat   # ou ft_strlcat, bonus, part1...
 cd 00-programming-fundamentals/01-00-printf && make
 cd 00-programming-fundamentals/01-01-getnextline && make
 cd 00-programming-fundamentals/02-push-swap && make

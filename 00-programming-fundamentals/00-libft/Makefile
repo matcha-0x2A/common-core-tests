@@ -13,9 +13,9 @@ DEPS = $(wildcard *.h) $(wildcard $(LIBFT_DIR)/*.h)
 all: $(NAME)
 	@if [ -f "$(LIBFT_DIR)/.wip" ]; then \
 		echo "⚠️  [WIP] $(LIBFT_DIR) en cours de développement - tests informatifs"; \
-		./$(NAME) || true; \
+		./$(NAME) $(ARGS) $(FUNCTION) || true; \
 	else \
-		./$(NAME); \
+		./$(NAME) $(ARGS) $(FUNCTION); \
 	fi
 
 $(NAME): $(LIBFT) $(SRCS) $(DEPS)
@@ -29,9 +29,9 @@ FORCE:
 valgrind: $(NAME)
 	@if [ -f "$(LIBFT_DIR)/.wip" ]; then \
 		echo "⚠️  [WIP] $(LIBFT_DIR) en cours de développement - valgrind informatif"; \
-		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --child-silent-after-fork=yes ./$(NAME) || true; \
+		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --child-silent-after-fork=yes ./$(NAME) $(ARGS) $(FUNCTION) || true; \
 	else \
-		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --child-silent-after-fork=yes ./$(NAME); \
+		valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --child-silent-after-fork=yes ./$(NAME) $(ARGS) $(FUNCTION); \
 	fi
 
 clean:

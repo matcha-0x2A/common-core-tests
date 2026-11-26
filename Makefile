@@ -7,7 +7,7 @@ help:
 	@echo "============================"
 	@echo ""
 	@echo "00-programming-fundamentals (C suites) :"
-	@echo "  ./00-programming-fundamentals/test-00-libft.sh [/path/to/00-libft] [--valgrind]"
+	@echo "  ./00-programming-fundamentals/test-00-libft.sh [/path/to/00-libft] [--valgrind] [function ...]"
 	@echo "  ./00-programming-fundamentals/test-01-00-printf.sh [/path/to/01-00-printf] [--valgrind]"
 	@echo "  ./00-programming-fundamentals/test-01-01-getnextline.sh [/path/to/01-01-getnextline] [--valgrind] [-b BUFFER_SIZE]"
 	@echo "  ./00-programming-fundamentals/test-02-push-swap.sh [/path/to/02-push-swap] [--valgrind]"
@@ -31,7 +31,7 @@ help:
 
 # C modules
 00-libft libft:
-	@$(MAKE) -C 00-programming-fundamentals/00-libft
+	@$(MAKE) -C 00-programming-fundamentals/00-libft ARGS="$(ARGS)" FUNCTION="$(FUNCTION)"
 
 01-00-printf libftprintf:
 	@$(MAKE) -C 00-programming-fundamentals/01-00-printf

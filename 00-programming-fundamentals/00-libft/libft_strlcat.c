@@ -11,6 +11,68 @@ static void crash_strlcat_null_dst(void)
 	ft_strlcat(NULL, "hello", 10);
 }
 
+static void test_strlcat_null_dst_zero_size(void)
+{
+	pid_t	pid;
+	int		status;
+	int		pfd[2];
+
+	g_tests_run++;
+	if (pipe(pfd) < 0)
+	{
+		record_failure("ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash (pipe failed)");
+		printf("  [%sFAIL%s] ft_strlcat(NULL, src, 0) (pipe failed)\n", RED, RESET);
+		return ;
+	}
+	fflush(stdout);
+	pid = fork();
+	if (pid < 0)
+	{
+		close(pfd[0]);
+		close(pfd[1]);
+		record_failure("ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash (fork failed)");
+		printf("  [%sFAIL%s] ft_strlcat(NULL, src, 0) (fork failed)\n", RED, RESET);
+		return ;
+	}
+	if (pid == 0)
+	{
+		close(pfd[0]);
+		size_t ret = ft_strlcat(NULL, "Hello", 0);
+		ssize_t w = write(pfd[1], &ret, sizeof(ret));
+		(void)w;
+		close(pfd[1]);
+		_exit(0);
+	}
+	close(pfd[1]);
+	size_t got = 0;
+	ssize_t r = read(pfd[0], &got, sizeof(got));
+	close(pfd[0]);
+	waitpid(pid, &status, 0);
+
+	if (WIFSIGNALED(status))
+	{
+		record_failure("ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash");
+		printf("  [%sFAIL%s] ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash (crashed with signal %d)\n", RED, RESET, WTERMSIG(status));
+	}
+	else if (WIFEXITED(status) && WEXITSTATUS(status) == 0 && r == (ssize_t)sizeof(got))
+	{
+		if (got == 5)
+			printf("  [%sOK%s] ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash\n", GREEN, RESET);
+		else
+		{
+			record_failure("ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash");
+			printf("  [%sFAIL%s] ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash\n", RED, RESET);
+			printf("         %s-> Expected : 5%s\n", YELLOW, RESET);
+			printf("         %s-> Got      : %zu%s\n", RED, got, RESET);
+		}
+	}
+	else
+	{
+		record_failure("ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash");
+		printf("  [%sFAIL%s] ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash\n", RED, RESET);
+	}
+}
+
 void test_strlcat(void)
 {
 	char	dst[32];
@@ -107,8 +169,7 @@ void test_strlcat(void)
 	check_str(dst, "", "ft_strlcat empty dst and empty src produces empty string");
 
 	/* 12. BSD feature: dst is NULL when size is 0 */
-	ret = ft_strlcat(NULL, "Hello", 0);
-	check_uint(ret, 5, "ft_strlcat(NULL, src, 0) returns strlen(src) safely without crash");
+	test_strlcat_null_dst_zero_size();
 
 	/* 13. Crash tests */
 	check_crash(crash_strlcat_null_src, "ft_strlcat(dst, NULL, 10) raises SIGSEGV (crash attendu)");
