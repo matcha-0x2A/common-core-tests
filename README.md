@@ -20,7 +20,7 @@ L'ensemble des tests est structuré par module d'apprentissage du cursus 42 :
   > - **`00-libft`** : tests unitaires, fault injection `malloc`, heap sale `0xAA`, traçage mémoire in-process (`-Wl,--wrap=malloc`).
   > - **`01-00-printf`** : tests différentiels exhaustifs vs `printf` standard libc.
   > - **`01-01-getnextline`** : gestion multi-fd, variations de `BUFFER_SIZE`, audit anti-leak.
-  > - **`02-push-swap`** : conformité grille de soutenance v1.2 (14 questions), validation README, Norminette, Valgrind, benchmarks 100/500 ops.
+  > - **`02-push-swap`** : conformité, validation README, Norminette, Valgrind, benchmarks 100/500 ops.
 
 - 🐧 [**01-systems-and-networks-administration/README.md**](file:///home/mchambon/wip/42/common-core-tests/01-systems-and-networks-administration/README.md)
   > Audit de conformité complet pour la virtualisation et l'administration système :
@@ -28,7 +28,7 @@ L'ensemble des tests est structuré par module d'apprentissage du cursus 42 :
 
 - 🐍 [**02-object-oriented-programming/README.md**](file:///home/mchambon/wip/42/common-core-tests/02-object-oriented-programming/README.md)
   > Suites de validation et tests unitaires pour la filière Python :
-  > - **`00-growing-code`** à **`04-03-funcmage`** : validation de conformité Flake8 (PEP 8) et suites `unittest`.
+  > - **`00-growing-code`** : validation de conformité Flake8 (PEP 8) et suites `unittest`.
   > - Programme de test helper (`main.py`) en mode automatique ou interactif pour `00-growing-code`.
 
 ---
