@@ -30,7 +30,12 @@ Chaque projet de la filière dispose d'une suite de validation de conformité de
    - Vérifie la conformité PEP 8 et l'absence d'erreurs de syntaxe ou variables non utilisées sur tous les fichiers du module (spécifiés dans `dist.files`).
 2. **Suites `unittest` (`test_suite.py`)** :
    - Tests automatisés des classes, fonctions, valeurs limites et cas d'erreur.
-3. **Programme Helper Interactif & Automatisé (`main.py`)** :
+3. **Contrôle statique des contraintes du sujet (AST)** :
+   - Analyse syntaxique de l'arbre syntaxique abstrait (AST) pour faire respecter les règles strictes des sujets 42 :
+     - **`03-01-data-archivist`** :
+       - **Interdiction de `with` avant l'exercice 3** : vérifie par AST (`ast.With`, `ast.AsyncWith`) que ni `ex0`, `ex1`, ni `ex2` n'emploient de context managers prématurément.
+       - **Types & collections standards autorisés** : vérifie l'absence d'imports de structures de collections non permises (`collections`, `heapq`, `array`, `queue`, `pandas`, `numpy`...) afin de restreindre l'usage aux seuls types autorisés (`str`, `int`, `float`, `list`, `dict`, `set`, `tuple`).
+4. **Programme Helper Interactif & Automatisé (`main.py`)** :
    - Spécifiquement pour `00-growing-code`, un helper interactif permet d'exécuter et tester visuellement chaque exercice (`ex0` à `ex7`) ou de dérouler un scénario de test automatisé complet.
 
 ---
@@ -49,6 +54,7 @@ Les scripts détectent automatiquement le dossier cible (selon le dossier couran
 # Tester n'importe quel autre module :
 ./02-object-oriented-programming/test-01-code-cultivation.sh [/chemin/vers/01-code-cultivation]
 ./02-object-oriented-programming/test-02-garden-guardian.sh [/chemin/vers/02-garden-guardian]
+./02-object-oriented-programming/test-03-01-data-archivist.sh [/chemin/vers/03-01-data-archivist]
 ```
 
 #### Options avancées pour `00-growing-code`

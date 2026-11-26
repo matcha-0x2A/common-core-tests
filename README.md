@@ -28,7 +28,8 @@ L'ensemble des tests est structuré par module d'apprentissage du cursus 42 :
 
 - 🐍 [**02-object-oriented-programming/README.md**](file:///home/mchambon/wip/42/common-core-tests/02-object-oriented-programming/README.md)
   > Suites de validation et tests unitaires pour la filière Python :
-  > - **`00-growing-code`** : validation de conformité Flake8 (PEP 8) et suites `unittest`.
+  > - **Conformité Flake8 (PEP 8)** & suites `unittest` / `pytest` sur tous les modules.
+  > - **Contrôle statique AST des contraintes du sujet** : vérification des interdictions strictes (ex: `03-01-data-archivist` interdisant l'instruction `with` avant `ex3` et restreignant les types/collections autorisés).
   > - Programme de test helper (`main.py`) en mode automatique ou interactif pour `00-growing-code`.
 
 ---

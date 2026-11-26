@@ -48,6 +48,7 @@ fi
 echo ""
 echo "--- 🧪 Étape 2 : Tests unitaires Python ---"
 TESTS_DIR="${SCRIPT_DIR}/${SUBJECT}"
+export TARGET_DIR="${TARGET}"
 export PYTHONPATH="${TARGET}:${PYTHONPATH}"
 
 PYTEST_BIN=$(command -v pytest || echo "${HOME}/.local/bin/pytest")
